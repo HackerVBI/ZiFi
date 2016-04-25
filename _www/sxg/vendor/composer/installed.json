@@ -1,0 +1,41 @@
+[
+    {
+        "name": "moroz1999/sxg",
+        "version": "0.0.2",
+        "version_normalized": "0.0.2.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/moroz1999/sxg.git",
+            "reference": "20ae94314b1465a819f94787bc9bf23a6908164d"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/moroz1999/sxg/zipball/20ae94314b1465a819f94787bc9bf23a6908164d",
+            "reference": "20ae94314b1465a819f94787bc9bf23a6908164d",
+            "shasum": ""
+        },
+        "require": {
+            "php": ">=5.6.0"
+        },
+        "time": "2016-03-27 17:27:31",
+        "type": "package",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-0": {
+                "Sxg": "src/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "CC0 1.0 Universal"
+        ],
+        "description": "SXG conversion/generation in PHP",
+        "homepage": "https://github.com/moroz1999/sxg",
+        "keywords": [
+            "php",
+            "sxg",
+            "zx evolution",
+            "zx spectrum"
+        ]
+    }
+]

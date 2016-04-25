@@ -1,0 +1,679 @@
+001   0000                   device zxspectrum128
+002   0000             
+003   0000                   org #6000
+004   6000             begin 
+005   6000                   include "test.asm"
+001+  6000 F3                di
+002+  6001 CD 00 C0          call init
+003+  6004 FD 21 3A 5C       ld iy,#5c3a
+004+  6008 21 58 27          ld hl,10072
+005+  600B D9                exx
+006+  600C FB                ei
+007+  600D 76          .loop halt
+008+  600E 01 01 00          ld bc,1
+009+  6011 21 F4 01          ld hl,500
+010+  6014             .delay
+011+  6014 ED 42             sbc hl,bc
+012+  6016 20 FC             jr nz,.delay
+013+  6018 3E 04             ld a,4
+014+  601A D3 FE             out (-2),a
+015+  601C CD 05 C0          call play
+016+  601F AF                xor a
+017+  6020 D3 FE             out (-2),a
+018+  6022 3E 7F             ld a,#7f
+019+  6024 DB FE             in a,(-2)
+020+  6026 1F                rra
+021+  6027 38 E4             jr c,.loop
+022+  6029 CD 08 C0          CALL mute
+023+  602C 3E 02       .fail ld a,2
+024+  602E D3 FE             out (-2),a
+025+  6030 F3                di
+026+  6031 76                halt
+027+  6032             
+028+  6032                   define MTC_CYBERMOTION "CyberMotion.mtc"
+029+  6032                   define MTC_DRUMTEST "drumtest.mtc"
+030+  6032                   define MTC_MUG "mug.mtc"
+031+  6032                   define MTC_MYSTICAL "mystical.mtc"
+032+  6032                   define MTC_NEWOLD "newold.mtc"
+033+  6032                   define MTC_SNEGURKA "Snegurka.mtc"
+034+  6032                   define MTC_INDEEDREST "ineedrest.mtc"
+035+  6032             
+036+  6032                   define TFC_CYBERMOTION MTC_CYBERMOTION,0x76
+037+  6032                   define TFC_DRUMTEST MTC_DRUMTEST,0xa90
+038+  6032                   define TFC_MUG MTC_MUG,0x52
+039+  6032                   define TFC_MYSTICAL MTC_MYSTICAL,0xcd4
+040+  6032                   define TFC_NEWOLD MTC_NEWOLD,0x263a
+041+  6032                   define TFC_SNEGURKA MTC_SNEGURKA,0x52
+042+  6032             
+043+  6032                   define PT3_DRUMTEST MTC_DRUMTEST,0x52
+044+  6032                   define PT3_MYSTICAL MTC_MYSTICAL,0x52
+045+  6032                   define PT3_NEWOLD MTC_NEWOLD,0x52
+046+  6032                   define PT3_SNEGURKA MTC_SNEGURKA,0xaa4
+047+  6032             
+048+  6032                   define TS_INEEDREST "ineedrest.mtc",0x52
+049+  6032             
+050+  6032                   define PT2_PITON "PITON.pt2"
+051+  6032                   
+006   6032                   
+007   6032                   org #c000
+008   C000             player      
+009   C000             init=player
+010   C000             play=player+5
+011   C000             mute=player+8
+012   C000                   include "tfc.asm"
+001+  C000                     ifndef _tfc_asm_defined
+002+  C000                     define _tfc_asm_defined
+003+  C000             
+004+  C000                     module TFC
+005+  C000                     
+006+  C000             ; Original version by (C) Alone Coder
+007+  C000             ; SjasmPlus adaptation, code cleanup and size optimization by (C) Vitamin/CAIG
+008+  C000             
+009+  C000             ; Warning: no 60Hz modules support!
+010+  C000                     
+011+  C000             ;TODO begin&end только в одном канале
+012+  C000             newtfm=1 ;0=revision A, 1=revision C
+013+  C000             
+014+  C000                     if newtfm == 1
+015+  C000             statuschip0=%11111000
+016+  C000             statuschip1=%11111001
+017+  C000                     else
+018+  C000~                    if newtfm == 2 ;US031DX
+019+  C000~            statuschip0=%11111110
+020+  C000~            statuschip1=%11111111
+021+  C000~                    else ;newtfm=0
+022+  C000~            statuschip0=%11111100
+023+  C000~            statuschip1=%11111101
+024+  C000~                    endif
+025+  C000                     endif 
+026+  C000                    
+027+  C000                     struct Header
+028+  C000~            signature
+029+  C000~                    ds 6
+030+  C000~            version ds 3        
+031+  C000~            intfreq db 0
+032+  C000~            tfmptrs ds 12
+033+  C000~            ssgptrs ds 12
+034+  C000                     ends
+035+  C000             
+036+  C000                     struct TFMData
+037+  C000~            addr    dw 0
+038+  C000~            skip    db 0
+039+  C000~            blkcnt  db 0
+040+  C000~            blkretaddr
+041+  C000~                    db 0
+042+  C000~            loopaddr
+043+  C000~                    db 0        
+044+  C000~            tfmlow  db 0
+045+  C000~            tfmhigh db 0        
+046+  C000                     ends
+047+  C000                     
+048+  C000                     macro WaitStatus
+049+  C000~                    if newtfm != 2
+050+  C000~                    inf
+051+  C000~                    jp m,$-2
+052+  C000~                    endif 
+053+  C000                     endm
+054+  C000                     
+055+  C000                     macro FM.OutReg Reg
+056+  C000~                    WaitStatus
+057+  C000~                    out (c),Reg
+058+  C000                     endm
+059+  C000             
+060+  C000                     macro FM.SelectReg Reg
+061+  C000~                    ld b,d
+062+  C000~                    FM.OutReg Reg
+063+  C000                     endm
+064+  C000                     
+065+  C000                     macro FM.WriteReg Reg
+066+  C000~                    ld b,e
+067+  C000~                    FM.OutReg Reg
+068+  C000                     endm
+069+  C000             
+070+  C000             Start
+071+  C000 21 50 C2            ld hl,End
+072+  C003 18 06               jr Init
+073+  C005 C3 BE C0            jp Play
+074+  C008 C3 47 C0            jp Mute
+075+  C00B             
+076+  C00B                     ifdef HaveFormatCheck
+077+  C00B~                    include "format.asm"
+078+  C00B~                    
+079+  C00B~            ;in HL - module addr
+080+  C00B~            ;out Z - is tfc
+081+  C00B~            ;out C - 60 Hz (valid only if Z)
+082+  C00B~            CheckFormat
+083+  C00B~                    EqualTo "T"
+084+  C00B~                    EqualTo "F"
+085+  C00B~                    EqualTo "M"
+086+  C00B~                    EqualTo "c"
+087+  C00B~                    EqualTo "o"
+088+  C00B~                    EqualTo "m"
+089+  C00B~                    AnyBytes 3
+090+  C00B~                    ld a,(hl)
+091+  C00B~                    cp 50
+092+  C00B~                    ret z
+093+  C00B~                    cp 60
+094+  C00B~                    ccf
+095+  C00B~                    ret
+096+  C00B~                    
+097+  C00B~                    display "TFC checker size: ",$-CheckFormat
+098+  C00B                     endif
+099+  C00B                     
+100+  C00B             ;HL - module addr
+101+  C00B             Init
+102+  C00B EB                  exd
+103+  C00C 21 0A 00            ld hl,Header.tfmptrs
+104+  C00F 19                  add hl,de
+105+  C010 D9                  exx 
+106+  C011             
+107+  C011 21 18 C2            ld hl,TFM.Init
+108+  C014 11 20 C2            ld de,TFM.A
+109+  C017 01 30 00            ld bc,6*TFMData
+110+  C01A ED B0               ldir
+111+  C01C             
+112+  C01C 21 3B C0            ld hl,.tfminitab
+113+  C01F 01 FD 06            ld bc,128*(.tfminitab_end-.tfminitab)+#fd
+114+  C022             .tfmini0
+115+  C022 11 31 C0            ld de,.tfminiHL
+116+  C025 ED A0               ldi 
+117+  C027 ED A0               ldi 
+118+  C029 D9                  exx 
+119+  C02A 7E                  ld a,(hl)
+120+  C02B 23                  inc hl
+121+  C02C E5                  push hl
+122+  C02D 66                  ld h,(hl)
+123+  C02E 6F                  ld l,a
+124+  C02F 19                  add hl,de
+125+  C030             .tfminiHL=$+1
+126+  C030 22 00 00            ld (0),hl
+127+  C033 E1                  pop hl
+128+  C034 23                  inc hl
+129+  C035 D9                  exx 
+130+  C036 10 EA               djnz .tfmini0
+131+  C038             
+132+  C038 C3 47 C0            jp Mute
+133+  C03B                     
+134+  C03B             .tfminitab
+135+  C03B 20 C2               DW TFM.A.addr
+136+  C03D 28 C2               DW TFM.B.addr
+137+  C03F 30 C2               DW TFM.C.addr
+138+  C041 38 C2               DW TFM.D.addr
+139+  C043 40 C2               DW TFM.E.addr
+140+  C045 48 C2               DW TFM.F.addr
+141+  C047             .tfminitab_end       
+142+  C047             
+143+  C047             Mute
+144+  C047 11 BF FF            ld de,#ffbf
+145+  C04A 0E FD               ld c,#fd
+146+  C04C CD B6 C0            call selChip0
+147+  C04F CD 55 C0            call .tfminiPP
+148+  C052 CD BA C0            call selChip1
+149+  C055             .tfminiPP
+150+  C055                     ; 0 -> (00..0D)
+151+  C055 21 00 00            ld hl,#0000
+152+  C058 3E 0E               ld a,#0e
+153+  C05A CD 9D C0            call .writeregsset
+154+  C05D                     
+155+  C05D                     ; 0 -> (30..3F)
+156+  C05D 26 30               ld h,#30
+157+  C05F 3E 40               ld a,#40
+158+  C061 CD 9D C0            call .writeregsset
+159+  C064                     
+160+  C064                     ; 0 -> (50..B4)
+161+  C064 26 50               ld h,#50
+162+  C066 3E B5               ld a,#b5
+163+  C068 CD 9D C0            call .writeregsset
+164+  C06B                     
+165+  C06B                     ; 0F -> (80..8F) ;max speed to RR
+166+  C06B 21 0F 80            ld hl,#800f
+167+  C06E 3E 90               ld a,#90
+168+  C070 CD 9D C0            call .writeregsset
+169+  C073                     
+170+  C073                     ; 0..2 -> 28, key off
+171+  C073                     ; 2 -> 27 channel 3 mode
+172+  C073 21 00 28            ld hl,#2800
+173+  C076 CD A5 C0            call .writereg
+174+  C079 2C                  inc l
+175+  C07A CD A5 C0            call .writereg
+176+  C07D 2C                  inc l
+177+  C07E CD A5 C0            call .writereg
+178+  C081 25                  dec h
+179+  C082 CD A5 C0            call .writereg
+180+  C085                     
+181+  C085                     ; 7F -> (40..4F,2F,2D)
+182+  C085 21 7F 40            ld hl,#407f
+183+  C088 3E 50               ld a,#50
+184+  C08A CD 9D C0            call .writeregsset
+185+  C08D                     
+186+  C08D 26 2F               ld h,#2f
+187+  C08F CD A5 C0            call .writereg
+188+  C092                     
+189+  C092 26 2D               ld h,#2d
+190+  C094 CD A5 C0            call .writereg
+191+  C097             
+192+  C097 3E FF               ld a,#ff ;выкл. FM
+193+  C099             .selRegA
+194+  C099 42                  ld b,d
+195+  C09A ED 79               out (c),a
+196+  C09C C9                  ret
+197+  C09D             
+198+  C09D             ;H=REG start
+199+  C09D             ;L=VALUE
+200+  C09D             ;A=REG end (not inclusive)
+201+  C09D             .writeregsset
+202+  C09D CD A5 C0            call .writereg
+203+  C0A0 24                  inc h
+204+  C0A1 BC                  cp h
+205+  C0A2 20 F9               jr nz,.writeregsset
+206+  C0A4 C9                  ret
+207+  C0A5             ;H=REG
+208+  C0A5             ;L=VALUE
+209+  C0A5             .writereg
+210+  C0A5                     FM.SelectReg h
+210+  C0A5 42          >        ld b,d
+210+  C0A6 ED 70       >        inf
+210+  C0A8 FA A6 C0    >        jp m,$-2
+210+  C0AB ED 61       >        out (c),Reg
+211+  C0AD                     FM.WriteReg l
+211+  C0AD 43          >        ld b,e
+211+  C0AE ED 70       >        inf
+211+  C0B0 FA AE C0    >        jp m,$-2
+211+  C0B3 ED 69       >        out (c),Reg
+212+  C0B5 C9                  ret
+213+  C0B6             
+214+  C0B6             selChip0
+215+  C0B6 3E F8               ld a,statuschip0
+216+  C0B8 18 DF               jr Mute.selRegA
+217+  C0BA             
+218+  C0BA             selChip1
+219+  C0BA 3E F9               ld a,statuschip1
+220+  C0BC 18 DB               jr Mute.selRegA
+221+  C0BE             
+222+  C0BE             Play
+223+  C0BE 11 BF FF            ld de,#FFBF
+224+  C0C1 0E FD               ld c,#FD
+225+  C0C3             
+226+  C0C3 CD B6 C0            call selChip0
+227+  C0C6             
+228+  C0C6 AF                  xor a
+229+  C0C7 08                  exa
+230+  C0C8 DD 21 20 C2         ld ix,TFM.A
+231+  C0CC CD 03 C1            call PlayChannel
+232+  C0CF 3E 01               ld a,1
+233+  C0D1 08                  exa
+234+  C0D2 DD 21 28 C2         ld ix,TFM.B
+235+  C0D6 CD 03 C1            call PlayChannel
+236+  C0D9 3E 02               ld a,2
+237+  C0DB 08                  exa
+238+  C0DC DD 21 30 C2         ld ix,TFM.C
+239+  C0E0 CD 03 C1            call PlayChannel
+240+  C0E3                     
+241+  C0E3 CD BA C0            call selChip1
+242+  C0E6             
+243+  C0E6 AF                  xor a
+244+  C0E7 08                  exa
+245+  C0E8 DD 21 38 C2         ld ix,TFM.D
+246+  C0EC CD 03 C1            call PlayChannel
+247+  C0EF 3E 01               ld a,1
+248+  C0F1 08                  exa
+249+  C0F2 DD 21 40 C2         ld ix,TFM.E
+250+  C0F6 CD 03 C1            call PlayChannel
+251+  C0F9 3E 02               ld a,2
+252+  C0FB 08                  exa
+253+  C0FC DD 21 48 C2         ld ix,TFM.F
+254+  C100 C3 03 C1            jp PlayChannel
+255+  C103             
+256+  C103             ;%11111111,-disp8 = данные кадра лежат по смещению -disp8
+257+  C103             ;%111ttttt = skip 32..2 frames
+258+  C103             ;%110ddddd = slide d-16
+259+  C103             ;%11010000,frames,-disp16 = repeat block (skips = 1 frame)
+260+  C103             ;%10111111,-disp16 = данные кадра лежат по смещению -disp16
+261+  C103             ;%10NNNNNf = keyoff,[freq,]0..30 regs, keyon
+262+  C103             ;%01111111 = end
+263+  C103             ;%01111110 = begin
+264+  C103             ;%01NNNNNf = keyoff,[freq,]0..31 regs
+265+  C103             ;%00NNNNNf =        [freq,]0..30 regs
+266+  C103             bb=%01111110
+267+  C103             be=%01111111
+268+  C103             ;IX - data
+269+  C103             ;DE - hi ports #FFBF
+270+  C103             ;C - low port #FD
+271+  C103             ;A' - fm channel
+272+  C103             PlayChannel
+273+  C103 DD 7E 02            ld a,(ix+TFMData.skip)
+274+  C106 3C                  inc a
+275+  C107 C2 C6 C1            jp nz,.skiper
+276+  C10A DD 7E 03            ld a,(ix+TFMData.blkcnt)
+277+  C10D A7                  and a
+278+  C10E 28 1D               jr z,.noframe
+279+  C110 DD 35 03            dec (ix+TFMData.blkcnt)
+280+  C113 20 18               jr nz,.noframe
+281+  C115 DD 6E 04            ld l,(ix+TFMData.blkretaddr)
+282+  C118 DD 66 05            ld h,(ix+TFMData.blkretaddr+1)
+283+  C11B 18 16               jr .tfmframe
+284+  C11D             .begin
+285+  C11D DD 75 05            ld (ix+TFMData.loopaddr),l
+286+  C120 DD 74 06            ld (ix+TFMData.loopaddr+1),h
+287+  C123 18 0E               jr .tfmframe
+288+  C125             .end
+289+  C125 DD 6E 05            ld l,(ix+TFMData.loopaddr)
+290+  C128 DD 66 06            ld h,(ix+TFMData.loopaddr+1)
+291+  C12B 18 06               jr .tfmframe
+292+  C12D             .noframe        
+293+  C12D DD 6E 00            ld l,(ix+TFMData.addr)
+294+  C130 DD 66 01            ld h,(ix+TFMData.addr+1)
+295+  C133             .tfmframe
+296+  C133 7E                  ld a,(hl)
+297+  C134 23                  inc hl
+298+  C135 FE 7E               cp bb
+299+  C137 28 E4               jr z,.begin
+300+  C139 FE 7F               cp be
+301+  C13B 28 E8               jr z,.end
+302+  C13D BB                  cp e ;#BF
+303+  C13E D2 B9 C1            jp NC,.HLskiper
+304+  C141             ;TestKeyOff
+305+  C141 F2 5A C1            jp P,.noffX
+306+  C144 F5                  push af
+307+  C145 3E 28               ld a,#28
+308+  C147                     FM.SelectReg a
+308+  C147 42          >        ld b,d
+308+  C148 ED 70       >        inf
+308+  C14A FA 48 C1    >        jp m,$-2
+308+  C14D ED 79       >        out (c),Reg
+309+  C14F 08                  exa
+310+  C150                     FM.WriteReg a ;FMChannel
+310+  C150 43          >        ld b,e
+310+  C151 ED 70       >        inf
+310+  C153 FA 51 C1    >        jp m,$-2
+310+  C156 ED 79       >        out (c),Reg
+311+  C158 08                  exa 
+312+  C159 F1                  pop af
+313+  C15A             .noffX
+314+  C15A B7                  OR a
+315+  C15B F5                  push af
+316+  C15C             ;TestFreq
+317+  C15C 1F                  RRA 
+318+  C15D 30 12               jr NC,.nofrqX
+319+  C15F             
+320+  C15F 46                  ld b,(hl)
+321+  C160 23                  inc hl
+322+  C161 4E                  ld c,(hl)
+323+  C162 23                  inc hl
+324+  C163 DD 70 07            ld (ix+TFMData.tfmhigh),b
+325+  C166 DD 71 06            ld (ix+TFMData.tfmlow),c
+326+  C169 C5                  push bc
+327+  C16A E3                  ex (sp),hl
+328+  C16B 0E FD               ld c,#FD
+329+  C16D CD DB C1            call .outTone
+330+  C170 E1                  pop hl
+331+  C171             
+332+  C171             .nofrqX
+333+  C171 E6 1F               and #1F
+334+  C173 C4 04 C2            call nz,.OutRegs
+335+  C176 CD B2 C1            call .storeaddr
+336+  C179 F1                  pop af
+337+  C17A F0                  ret P
+338+  C17B             ;.KeyOn        
+339+  C17B 3E 28               ld a,#28
+340+  C17D                     FM.SelectReg a
+340+  C17D 42          >        ld b,d
+340+  C17E ED 70       >        inf
+340+  C180 FA 7E C1    >        jp m,$-2
+340+  C183 ED 79       >        out (c),Reg
+341+  C185 08                  exa
+342+  C186 C6 F0               add a,#F0
+343+  C188                     FM.WriteReg a
+343+  C188 43          >        ld b,e
+343+  C189 ED 70       >        inf
+343+  C18B FA 89 C1    >        jp m,$-2
+343+  C18E ED 79       >        out (c),Reg
+344+  C190 D6 F0               sub #F0
+345+  C192 08                  exa
+346+  C193 C9                  ret 
+347+  C194             
+348+  C194             .block
+349+  C194 7E                  ld a,(hl) ;N frames
+350+  C195                               ;1 now, N-1 later
+351+  C195                               ;skip command is used as 1 frame
+352+  C195 23                  inc hl
+353+  C196 DD 77 03            ld (ix+TFMData.blkcnt),a
+354+  C199 46                  ld b,(hl)
+355+  C19A 23                  inc hl
+356+  C19B 4E                  ld c,(hl) ;disp
+357+  C19C 23                  inc hl
+358+  C19D DD 75 04            ld (ix+TFMData.blkretaddr),l
+359+  C1A0 DD 74 05            ld (ix+TFMData.blkretaddr+1),h
+360+  C1A3             .subframe        
+361+  C1A3 09                  add hl,bc
+362+  C1A4 0E FD               ld c,#fd
+363+  C1A6 C3 33 C1            jp .tfmframe
+364+  C1A9             
+365+  C1A9             .OLDfar
+366+  C1A9 46                  ld b,(hl)
+367+  C1AA 23                  inc hl
+368+  C1AB             .OLDnear
+369+  C1AB 4E                  ld c,(hl)
+370+  C1AC 23                  inc hl
+371+  C1AD E5                  push hl
+372+  C1AE CD A3 C1            call .subframe
+373+  C1B1 E1                  pop hl
+374+  C1B2             .storeaddr        
+375+  C1B2 DD 75 00            ld (ix+TFMData.addr),l
+376+  C1B5 DD 74 01            ld (ix+TFMData.addr+1),h
+377+  C1B8 C9                  ret 
+378+  C1B9             .HLskiper
+379+  C1B9 28 EE               jr z,.OLDfar
+380+  C1BB FE E0               cp %11100000
+381+  C1BD 38 0B               jr c,.slide
+382+  C1BF 47                  ld b,a
+383+  C1C0 BA                  cp d ;#FF
+384+  C1C1 28 E8               jr z,.OLDnear
+385+  C1C3 CD B2 C1            call .storeaddr
+386+  C1C6 DD 77 02    .skiper ld (ix+TFMData.skip),a
+387+  C1C9 C9                  ret
+388+  C1CA             .slide
+389+  C1CA                    ;a=-64..-33
+390+  C1CA C6 30               add a,48
+391+  C1CC                    ;a=-16..15
+392+  C1CC 28 C6               jr z,.block
+393+  C1CE DD 86 06            add a,(ix+TFMData.tfmlow)
+394+  C1D1 DD 77 06            ld (ix+TFMData.tfmlow),a
+395+  C1D4 CD B2 C1            call .storeaddr
+396+  C1D7 DD 66 07            ld h,(ix+TFMData.tfmhigh)
+397+  C1DA 6F                  ld l,a
+398+  C1DB             .outTone
+399+  C1DB 08                  exa
+400+  C1DC C6 A4               add a,#a4
+401+  C1DE                     FM.SelectReg a
+401+  C1DE 42          >        ld b,d
+401+  C1DF ED 70       >        inf
+401+  C1E1 FA DF C1    >        jp m,$-2
+401+  C1E4 ED 79       >        out (c),Reg
+402+  C1E6                     FM.WriteReg h
+402+  C1E6 43          >        ld b,e
+402+  C1E7 ED 70       >        inf
+402+  C1E9 FA E7 C1    >        jp m,$-2
+402+  C1EC ED 61       >        out (c),Reg
+403+  C1EE D6 04               sub #04  ;#A0+channel
+404+  C1F0                     FM.SelectReg a
+404+  C1F0 42          >        ld b,d
+404+  C1F1 ED 70       >        inf
+404+  C1F3 FA F1 C1    >        jp m,$-2
+404+  C1F6 ED 79       >        out (c),Reg
+405+  C1F8                     FM.WriteReg l
+405+  C1F8 43          >        ld b,e
+405+  C1F9 ED 70       >        inf
+405+  C1FB FA F9 C1    >        jp m,$-2
+405+  C1FE ED 69       >        out (c),Reg
+406+  C200 D6 A0               sub #a0
+407+  C202 08                  exa
+408+  C203 C9                  ret 
+409+  C204             
+410+  C204 42          .OutRegs ld b,d ;%11111xxx
+411+  C205                     WaitStatus
+411+  C205 ED 70       >        inf
+411+  C207 FA 05 C2    >        jp m,$-2
+412+  C20A ED A3               outi   ;reg
+413+  C20C                     WaitStatus
+413+  C20C ED 70       >        inf
+413+  C20E FA 0C C2    >        jp m,$-2
+414+  C211 43                  ld b,e ;#BF
+415+  C212 ED A3               outi   ;value
+416+  C214 3D                  dec a
+417+  C215 20 ED               jr nz,.OutRegs ;в turbo jr=jp
+418+  C217 C9                  ret 
+419+  C218             
+420+  C218             TFM.Init TFMData 0,-1,0
+420+  C218 0000FF0000000000
+421+  C220             TFM.A  TFMData        
+421+  C220 0000000000000000
+422+  C228             TFM.B  TFMData
+422+  C228 0000000000000000
+423+  C230             TFM.C  TFMData
+423+  C230 0000000000000000
+424+  C238             TFM.D  TFMData
+424+  C238 0000000000000000
+425+  C240             TFM.E  TFMData
+425+  C240 0000000000000000
+426+  C248             TFM.F  TFMData
+426+  C248 0000000000000000
+427+  C250             
+428+  C250                    endmod
+429+  C250             TFC.End
+430+  C250                    
+431+  C250                    display "TFC module size: ",TFC.End-TFC.Start
+432+  C250                    
+433+  C250                    endif
+434+  C250             
+013   C250             
+014   C250             module      
+015   C250                   incbin TFC_CYBERMOTION
+016   F79A                   ;incbin TFC_DRUMTEST
+017   F79A                   ;incbin TFC_MUG
+018   F79A                   ;incbin TFC_MYSTICAL
+019   F79A                   ;incbin TFC_NEWOLD
+020   F79A                   ;incbin TFC_SNEGURKA
+021   F79A             
+022   F79A                   savesna "test_tfc.sna",begin
+023   F79A                   savebin "../tfc_c000.bin",player,module-player
+024   F79A             
+
+Value    Label
+------ - -----------------------------------------------------------
+0x6000   begin
+0xC000   init
+0x600D   begin.loop
+0x6014   begin.delay
+0xC005   play
+0xC008   mute
+0x602C X begin.fail
+0xC000   player
+0x0001   TFC.newtfm
+0x00F8   TFC.statuschip0
+0x00F9   TFC.statuschip1
+0x0022 X TFC.Header
+0x0000 X TFC.Header.signature
+0x0006 X TFC.Header.version
+0x0009 X TFC.Header.intfreq
+0x000A   TFC.Header.tfmptrs
+0x0016 X TFC.Header.ssgptrs
+0x0008   TFC.TFMData
+0x0000   TFC.TFMData.addr
+0x0002   TFC.TFMData.skip
+0x0003   TFC.TFMData.blkcnt
+0x0004   TFC.TFMData.blkretaddr
+0x0005   TFC.TFMData.loopaddr
+0x0006   TFC.TFMData.tfmlow
+0x0007   TFC.TFMData.tfmhigh
+0xC000   TFC.Start
+0xC250   TFC.End
+0xC00B   TFC.Init
+0xC0BE   TFC.Play
+0xC047   TFC.Mute
+0xC218   TFC.TFM.Init
+0xC220   TFC.TFM.A
+0xC03B   TFC.Init.tfminitab
+0xC047   TFC.Init.tfminitab_end
+0xC022   TFC.Init.tfmini0
+0xC031   TFC.Init.tfminiHL
+0xC220   TFC.TFM.A.addr
+0xC228   TFC.TFM.B.addr
+0xC230   TFC.TFM.C.addr
+0xC238   TFC.TFM.D.addr
+0xC240   TFC.TFM.E.addr
+0xC248   TFC.TFM.F.addr
+0xC0B6   TFC.selChip0
+0xC055   TFC.Mute.tfminiPP
+0xC0BA   TFC.selChip1
+0xC09D   TFC.Mute.writeregsset
+0xC0A5   TFC.Mute.writereg
+0xC099   TFC.Mute.selRegA
+0xC103   TFC.PlayChannel
+0xC228   TFC.TFM.B
+0xC230   TFC.TFM.C
+0xC238   TFC.TFM.D
+0xC240   TFC.TFM.E
+0xC248   TFC.TFM.F
+0x007E   TFC.bb
+0x007F   TFC.be
+0xC1C6   TFC.PlayChannel.skiper
+0xC12D   TFC.PlayChannel.noframe
+0xC133   TFC.PlayChannel.tfmframe
+0xC11D   TFC.PlayChannel.begin
+0xC125   TFC.PlayChannel.end
+0xC1B9   TFC.PlayChannel.HLskiper
+0xC15A   TFC.PlayChannel.noffX
+0xC171   TFC.PlayChannel.nofrqX
+0xC1DB   TFC.PlayChannel.outTone
+0xC204   TFC.PlayChannel.OutRegs
+0xC1B2   TFC.PlayChannel.storeaddr
+0xC194   TFC.PlayChannel.block
+0xC1A3   TFC.PlayChannel.subframe
+0xC1A9   TFC.PlayChannel.OLDfar
+0xC1AB   TFC.PlayChannel.OLDnear
+0xC1CA   TFC.PlayChannel.slide
+0xC218 X TFC.TFM.Init.addr
+0xC21A X TFC.TFM.Init.skip
+0xC21B X TFC.TFM.Init.blkcnt
+0xC21C X TFC.TFM.Init.blkretaddr
+0xC21D X TFC.TFM.Init.loopaddr
+0xC21E X TFC.TFM.Init.tfmlow
+0xC21F X TFC.TFM.Init.tfmhigh
+0xC222 X TFC.TFM.A.skip
+0xC223 X TFC.TFM.A.blkcnt
+0xC224 X TFC.TFM.A.blkretaddr
+0xC225 X TFC.TFM.A.loopaddr
+0xC226 X TFC.TFM.A.tfmlow
+0xC227 X TFC.TFM.A.tfmhigh
+0xC22A X TFC.TFM.B.skip
+0xC22B X TFC.TFM.B.blkcnt
+0xC22C X TFC.TFM.B.blkretaddr
+0xC22D X TFC.TFM.B.loopaddr
+0xC22E X TFC.TFM.B.tfmlow
+0xC22F X TFC.TFM.B.tfmhigh
+0xC232 X TFC.TFM.C.skip
+0xC233 X TFC.TFM.C.blkcnt
+0xC234 X TFC.TFM.C.blkretaddr
+0xC235 X TFC.TFM.C.loopaddr
+0xC236 X TFC.TFM.C.tfmlow
+0xC237 X TFC.TFM.C.tfmhigh
+0xC23A X TFC.TFM.D.skip
+0xC23B X TFC.TFM.D.blkcnt
+0xC23C X TFC.TFM.D.blkretaddr
+0xC23D X TFC.TFM.D.loopaddr
+0xC23E X TFC.TFM.D.tfmlow
+0xC23F X TFC.TFM.D.tfmhigh
+0xC242 X TFC.TFM.E.skip
+0xC243 X TFC.TFM.E.blkcnt
+0xC244 X TFC.TFM.E.blkretaddr
+0xC245 X TFC.TFM.E.loopaddr
+0xC246 X TFC.TFM.E.tfmlow
+0xC247 X TFC.TFM.E.tfmhigh
+0xC24A X TFC.TFM.F.skip
+0xC24B X TFC.TFM.F.blkcnt
+0xC24C X TFC.TFM.F.blkretaddr
+0xC24D X TFC.TFM.F.loopaddr
+0xC24E X TFC.TFM.F.tfmlow
+0xC24F X TFC.TFM.F.tfmhigh
+0xC250   module

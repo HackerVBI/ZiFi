@@ -1,0 +1,207 @@
+        relaxed on
+        cpu z80undoc
+
+        org     0x6000
+;---------------------------------------
+        ld      sp,0x6000
+        im      1
+        ei
+        res     4,(iy+1)
+        ld      bc,0x7ffd
+        ld      a,0x12
+        out     (c),a
+        ld      a,0x07
+        ld      (0x5c48),a
+        ld      (0x5c8d),a
+        xor     a
+        out     (0xfe),a
+        call    0x0d6b
+        ld      a,2
+        call    0x1601
+        ld      hl,msg_title
+        call    zx_puts_ff
+
+        ld      bc,0xc7ef
+        ld      de,0xfff1
+        out     (c),e
+        out     (c),d
+        in      a,(c)
+        cp      0xff
+        jp      z,pmsgerr
+
+        push    af
+        ld      hl,msg_zifi_found
+        call    zx_puts_ff
+        pop     af
+        call    zx_puthex
+
+        ld      hl,msg_stat0
+        call    zx_puts_ff
+        ld      a,0xf5
+        ld      (zifi_io),a
+        ld      bc,0xc7ef
+        ld      a,0x03
+        halt
+        out     (c),a           ;reset FIFO
+loop0:
+        xor     a
+        ld      (0x5c78),a
+        ld      hl,(spdstat)
+        push    hl
+        ld      hl,0
+        ld      (spdstat),hl
+        ld      hl,msg_stat1
+        call    zx_puts_ff
+        pop     hl
+        call    decword
+
+loop1:  call    zifi_io
+        ld      a,(0x5c78)
+        cp      50
+        jr      c,loop1
+        jr      loop0
+;
+;
+pmsgerr:ld      hl,msg_no_zifi
+        call    zx_puts_ff
+        di
+        halt
+;------------------------------
+zifi_io:ret     ;   push    af  = 0xf5
+        push    hl
+        push    de
+        push    bc
+
+        ld      de,0x00bf
+        ld      bc,0xc0ef
+        in      a,(c)
+        jr      z,io50
+        cp      e
+        jr      nc,io11
+        ld      e,a
+io11:
+        ld      hl,(spdstat)
+        add     hl,de
+        ld      (spdstat),hl
+        ld      hl,(ptr_rx)
+        ld      b,e
+        inir
+        res     6,h
+        ld      (ptr_rx),hl
+
+io50:
+        ld      b,0xc1
+        in      a,(c)
+        jr      z,io90
+        cp      0xbf
+        jr      c,io51
+        ld      a,0xbf
+io51:   ld      b,a
+
+        ld      hl,(ptr_rx)
+        ld      de,(ptr_tx)
+        xor     a
+        sbc     hl,de
+        jr      z,io90
+        ld      a,h
+        and     0x3f
+        ld      h,a
+        jr      nz,io52
+        ld      a,l
+        cp      b
+        jr      nc,io52
+        ld      b,l
+io52:   ex      de,hl
+        otir
+        res     6,h
+        ld      (ptr_tx),hl
+
+io90:
+        pop     bc
+        pop     de
+        pop     hl
+        pop     af
+        ret
+;------------------------------
+;in:    hl
+decword:ld      ix,_dcwtab
+        xor     a
+        ld      b,4
+_decw3: ld      e,(ix)
+        inc     ix
+        ld      d,(ix)
+        inc     ix
+_decw2: or      a
+        sbc     hl,de
+        jr      c,_decw1
+        inc     a
+        jr      _decw2
+_decw1: add     hl,de
+        call    _decwpc
+        djnz    _decw3
+        ld      a,l
+        or      a,0x30
+        rst     0x10
+        jp      zifi_io
+
+_decwpc:or      a
+        jr      z,_dcspc
+        push    hl
+        push    bc
+        or      0x30
+        rst     0x10
+        call    zifi_io
+        ld      a,0x30
+        pop     bc
+        pop     hl
+        ret
+
+_dcspc: push    hl
+        push    bc
+        ld      a,0x20
+        rst     0x10
+        call    zifi_io
+        xor     a
+        pop     bc
+        pop     hl
+        ret
+
+_dcwtab:defw    10000,1000,100,10
+;------------------------------
+zx_puthex:
+        push    af
+        rrca
+        rrca
+        rrca
+        rrca
+        call    _hexhlf
+        pop     af
+_hexhlf:and     0x0f
+        cp      0x0a
+        jr      c,_hexh1
+        add     a,0x07
+_hexh1: add     a,0x30
+        rst     0x10
+        jp      zifi_io
+;------------------------------
+zx_puts_ff:
+        ld      a,(hl)
+        inc     hl
+        cp      0xff
+        ret     z
+        push    hl
+        rst     0x10
+        call    zifi_io
+        pop     hl
+        jr      zx_puts_ff
+;------------------------------
+ptr_rx: defw    0x8000
+ptr_tx: defw    0x8000
+spdstat:defw    0
+;------------------------------
+msg_title:      defb    "'ZiFi' UART TEST 1",0x0d,0x0d,0xff
+msg_no_zifi:    defb    "'ZiFi' not detected.",0xff
+msg_zifi_found: defb    "Found 'ZiFi' API:0x",0xff
+msg_stat0:      defb    22,5,0,"Bytes pet 50 INTs: ",0xff
+msg_stat1:      defb    22,5,19,0xff
+;------------------------------

@@ -1,0 +1,19 @@
+SjASMPlus Z80 Cross-Assembler v1.07 RC8 (build 06-11-2008)
+Pass 1 complete (0 errors)
+Pass 2 complete (0 errors)
+> MTC checker size: 0x001F
+> MTC: loosed 0x0091 bytes
+> MTC: max streams 0x0010
+> PTS player size=0x0BD2
+> PT3 checker size: 0x0047
+> PT3 module size: 0x004C
+> PT2 checker size: 0x003B
+> PT2 module size: 0x0040
+> TS checker size: 0x003E
+> TS module size: 0x0043
+> TFC checker size: 0x0029
+> TFC module size: 0x0279
+> MTC module size: 0x11F6
+> UNI module size: 0x1268
+Pass 3 complete
+Errors: 0, warnings: 0, compiled: 11204 lines

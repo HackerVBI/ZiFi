@@ -1,0 +1,48 @@
+AT 
+OK
+AT+GMR 
+AT version:0.60.0.0(Jan 29 2016 15:10:17)
+SDK version:1.5.2(80914727)
+compile time:Jan 29 2016 19:06:50
+OK
+AT+CWMODE_DEF?  busy p...
++CWMODE_DEF:1
+
+OK
+AT+CWLAP  busy p...
++CWLAP:(3,"win",-77,"08:60:6e:24:89:70",13,85,0)
++CWLAP:(4,"YV",-38,"08:60:6e:d2:f7:58",13,86,0)
+
+OK
+AT+CWJAP_CUR="YV","1234123412" WIFI CONNECTED
+WIFI GOT IP
+
+OK
+AT+CIPSTA? +CIPSTA:ip:"192.168.1.248"
++CIPSTA:gateway:"192.168.1.1"
++CIPSTA:netmask:"255.255.255.0"
+
+OK
+AT+PING="google.com" +24
+
+OK
+AT+CIPSTART="TCP","zxart.ee",80  busy p...
+CONNECT
+
+OK
+AT+CIPSEND=4 
+OK
+> 
+Recv 4 bytes
+
+SEND OK
+
+
+AT+CIPSEND=104
+GET /index.php HTTP/1.0
+Host: zxart.ee
+User-Agent: ZiFi (ZX Evo)
+Accept: */*
+Connection: close
+
+

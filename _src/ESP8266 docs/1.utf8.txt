@@ -1,0 +1,51 @@
+﻿http://bbs.espressif.com/
+
+ "[Latest Release] ESP8266 SDK"
+ "Non-OS SDK..." - отгрузочная прошивка
+
+SDK Development Guide @ http://bbs.espressif.com/viewtopic.php?f=51&t=1024
+AT Commands User Guide @ http://bbs.espressif.com/viewtopic.php?f=51&t=1022
+All documentations @ http://bbs.espressif.com/viewforum.php?f=51
+
+
+http://esp8266.ru/
+
+
+http://geektimes.ru/post/241054/
+
+
+
+
+
+espprob1.a80 http://tslabs.info/forum/viewtopic.php?p=17447#p17447
+~~~~~~~~~~~~
+видео: https://yadi.sk/i/afXhFTDpijb63
+голубой - коментарии
+жёлтый - посылаемые модулю команды
+белый - ответы модуля (байты после +IPD,xxxx: не отображаются)
+
+
+ATE0
+проверка связи, отключение "эха"
+
+AT+CWMODE_DEF=1
+режим "станция"
+
+
+
+AT+CWAUTOCONN=0
+откл. автоподключение к точке доступа (AP)
+
+AT+CWQAP
+отключение от AP (если уже было подключение)
+
+
+
+AT+CWLAP
+список доступных AP
+
+AT+CWJAP="имя_точки","пароль"
+подключение к AP
+
+
+далее пинг и собственно HTTP запросы

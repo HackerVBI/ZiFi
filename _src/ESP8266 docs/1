@@ -1,0 +1,6 @@
+GET /index.php HTTP/1.0
+Host: zxart.ee
+User-Agent: ZiFi (ZX Evo)
+Accept: */*
+Connection: close
+

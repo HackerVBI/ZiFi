@@ -1,0 +1,79 @@
+AT 
+OK
+AT+CWJAP_CUR="YV","1234123412" WIFI CONNECTED
+WIFI GOT IP
+
+OK
+AT+CIPSTART="TCP","zxart.ee",80  busy p...
+CONNECT
+
+OK
+AT+CIPSEND=104 
+OK
+> 
+Recv 104 bytes
+
+SEND OK
+
++IPD,504:HTTP/1.1 301 Moved Permanently
+Date: Sun, 27 Mar 2016 08:29:50 GMT
+Server: Apache / DataZone
+Location: http://zxart.ee/
+Content-Length: 293
+Connection: close
+Content-Type: text/html; charset=iso-8859-1
+
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html><head>
+<title>301 Moved Permanently</title>
+</head><body>
+<h1>Moved Permanently</h1>
+<p>The document has moved <a href="http://zxart.ee/">here</a>.</p>
+<hr>
+<address>Apache / DataZone Server at zxart.ee Port 80</address>
+</body></html>
+CLOSED
+
+
+
+
+AT 
+OK
+AT+GMR 
+AT version:0.60.0.0(Jan 29 2016 15:10:17)
+SDK version:1.5.2(80914727)
+compile time:Jan 29 2016 19:06:50
+OK
+AT+CWMODE_DEF?  busy p...
++CWMODE_DEF:1
+
+OK
+AT+CWLAP  busy p...
++CWLAP:(3,"win",-77,"08:60:6e:24:89:70",13,85,0)
++CWLAP:(4,"YV",-38,"08:60:6e:d2:f7:58",13,86,0)
+
+OK
+AT+CWJAP_CUR="YV","1234123412" WIFI CONNECTED
+WIFI GOT IP
+
+OK
+AT+CIPSTA? +CIPSTA:ip:"192.168.1.248"
++CIPSTA:gateway:"192.168.1.1"
++CIPSTA:netmask:"255.255.255.0"
+
+OK
+AT+PING="google.com" +24
+
+OK
+AT+CIPSTART="TCP","zxart.ee",80  
+busy p...
+CONNECT
+
+AT+CIPSEND=104
+GET /index.php HTTP/1.0
+Host: zxart.ee
+User-Agent: ZiFi (ZX Evo)
+Accept: */*
+Connection: close
+
+

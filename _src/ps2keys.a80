@@ -1,0 +1,511 @@
+		call	_ps2Init
+
+;---------------------------------------
+; PentEvo Configuration API Header
+;---------------------------------------
+
+peNvRamAccess	equ	#eff7	; управление доступом к ячейкам NvRam
+				; i: A
+				;   [7]:   Разрешить(1) / Запретить(0) доступ
+peNvRamLocation	equ	#dff7	; задать номер ячейки NvRam с которой будет вестись работа
+				; i: A - номер ячейки (от 0 - 255) 
+peNvRamData	equ	#bff7	; работа с данными ячеек NvRam
+				; i: A - прочитать данные из ячейки заданной в peNvRamLocation
+				; o: A - записать данные в ячейку заданную в peNvRamLocation
+;---------------------------------------------
+; PS/2 Keyboard driver
+;---------------------------------------------
+_ps2Init	call	_ps2SelectNvram
+		xor	a
+		ld	(ps2Status),a
+_ps2Init_00	ld	(ps2RepeatMode),a
+		ld	a,(ps2RepeatDefaut)
+		add	a,a
+		ld	(ps2RepeatCounter),a
+
+		jp	_ps2ResetAll
+
+;---------------------------------------
+
+_ps2SelectNvram	ld	a,#f0					; отсылаем #02 -> #f0 (включить режим чтение ps/2)
+		ld	bc,peNvRamLocation
+		out	(c),a
+		ld	a,#02
+		ld	bc,peNvRamData
+		out	(c),a
+		ret
+		
+;---------------------------------------
+_ps2PrepareScanCode
+		call	ps2SetKeyStatus
+		ld	a,(ps2Status)				; Вызывается каждое прерывание
+		
+		cp	#04					; Данные подготовлены и ожидают, что их заберут
+		ret	z
+
+		cp	#00					; Если статус ≠ #00, то продолжаем обработку
+		jr	nz,ps2Status01
+
+;---------------
+ps2Status00	ld	a,(ps2RepeatMode)
+		cp	#01
+		jp	z,checkRepeatMode			; Если включен режим автоповтора, то проверяем статус готовности
+
+;---------------
+		call	ps2ReadOneCode				; Читаем 0й скан код
+		cp	#00
+		jr	nz,ps2Status00B				
+
+ps2Status00A	ld	a,(ps2RepeatMode)			; Если скан код = #00, то проверяем режим автоповтора
+		cp	#01
+		jr	z,ps2Status00H
+
+		ret
+			
+ps2Status00B	ld	(ps2ScanCode),a
+		
+		cp	#f0					; Если скан код #f0 (клавишу отпустили), отключить режим автоповтора
+		jr	z,ps2Status00D
+
+		cp	#e0					; Если скан код = #e0, установить статус #01 и выйти
+		jr	nz,ps2Status00E
+
+ps2Status00C	ld	a,#01
+		ld	(ps2Status),a
+		ret
+
+ps2Status00D	call	ps2RepeatDisable
+		jr	ps2Status00C
+
+ps2Status00E	xor	a					; В противном случае выставить последующие коды 1,2,3 как #00
+		ld	(ps2ScanCode+1),a
+
+ps2Status00F	xor	a
+		ld	(ps2ScanCode+2),a
+
+ps2Status00G	xor	a
+		ld	(ps2ScanCode+3),a
+
+ps2Status00H	call	ps2RepeatEnable				; Включить режим автоповтора
+		
+ps2Status00I	ld	a,#04					; Установить статус данные готовы — можно забирать
+		ld	(ps2Status),a
+
+		ret
+;---------------
+ps2Status01	cp	#01					; Если статус ≠ #01, то продолжаем обработку
+		jr	nz,ps2Status02
+
+		call	ps2ReadOneCode				; Читаем 1й скан код
+		cp	#00					; Данные не готовы — выход
+		ret	z
+
+		ld	(ps2ScanCode+1),a
+
+		cp	#f0
+		jr	nz,ps2Status01A		
+
+		call	ps2RepeatDisable
+
+		ld	a,#02
+		ld	(ps2Status),a
+
+		ret
+
+ps2Status01A	ld	a,(ps2ScanCode)
+		cp	#f0
+		jr	nz,ps2Status00F
+
+		xor	a
+		ld	(ps2ScanCode+2),a
+		ld	(ps2ScanCode+3),a
+
+		jr	ps2Status00I
+
+;---------------
+ps2Status02	cp	#02					; Если статус ≠ #02, то заканчиваем обработку
+		ret	nz					; в противном случае — выход
+
+		call	ps2ReadOneCode				; Читаем 2й скан код
+		cp	#00					; Данные не готовы — выход
+		ret	z
+
+		ld	(ps2ScanCode+2),a
+
+		ld	a,(ps2ScanCode+1)
+		cp	#f0
+		jr	nz,ps2Status00G
+
+		xor	a
+		ld	(ps2ScanCode+3),a
+
+		jr	ps2Status00I
+;---------------
+checkRepeatMode	call	ps2ReadOneCode
+		cp	#00					; Если новый код ≠ #00, то останавливаем повтор
+		jp	nz,ps2Status00B
+
+		ld	a,(ps2RepeatCounter)
+		cp	#00					; Если задержка повтора нажатой клавиши = #00 выставляем режим #04
+		jr	nz,decRepeatMode
+
+		ld	a,(ps2RepeatDefaut)
+		ld	(ps2RepeatCounter),a
+
+		jr	ps2Status00I
+
+
+decRepeatMode	dec	a
+		ld	(ps2RepeatCounter),a
+		ret
+
+;---------------
+ps2ReadOneCode	ld	a,#f0
+ 		jp	_nvRamGetData+1				; читаем скан-код
+
+;---------------
+ps2RepeatEnable	ld	a,#01
+		jp	_ps2Init_00
+
+ps2RepeatDisable push	af
+		xor	a
+		call	_ps2Init_00
+		pop	af
+		ret
+
+;---------------
+_ps2GetScanCodeT						; Забрать данные, но не снимать флаг!
+		ld	a,(ps2Status)
+		cp	#04
+		jr	nz,_ps2NoScanCode
+		jr	_ps2YepScanCode
+
+_ps2GetScanCode	ld	a,(ps2Status)
+		cp	#04
+		jr	z,scanCodeReady				; Если #04, данные готовы — можно забирать
+_ps2NoScanCode	ld	hl,#0000
+		ld	de,#0000
+		ld	a,#ff					; A=#FF Ошибка.Данные не готовы
+		ret
+
+scanCodeReady	xor	a
+ 		ld	(ps2Status),a				; данные забраны, можно подготовить следующие
+
+_ps2YepScanCode	ld	hl,(ps2ScanCode)
+ 		ld	de,(ps2ScanCode+2)
+ 		ret
+
+;---------------	
+_ps2ResetKeyboard
+		ld	a,#0c
+		call	_nvRamGetData
+		and	%00000010				; 1-й бит сохраняем статус Caps Lock
+		or	%00000001				; 0-й бит cброс буфера клавиатуры
+_ps2ResKbd	ex	af,af'
+		ld	a,#0c
+		call	_nvRamSetData
+		ret
+_ps2ResetAll	ld	a,%00000001				; 0-й бит cброс буфера клавиатуры
+		jr	_ps2ResKbd
+;---------------
+ps2SetKeyStatus	ld	hl,(ps2ScanCode)				
+ 		ld	de,(ps2ScanCode+2)
+ 		ld	a,h					; скан код пустой — выход
+ 		or	l
+ 		ret	z
+ 		ld	a,l
+ 		cp	#e0
+ 		jr	nz,setKeyStatus00
+ 		ld	l,h
+ 		ld	h,e
+ 		ld	de,keyStatusE0
+ 		jr	setKeyStatus01
+setKeyStatus00	ld	de,keyStatus
+setKeyStatus01	ld	a,l					; скан код (#11 - alt)
+		cp	#f0					; если #f0 значит отпустили
+		jr	nz,setKeyStatus03
+		ld	l,h
+		ld	h,#00
+		xor	a
+		jr	setKeyStatus04
+setKeyStatus03	ld	a,#01
+setKeyStatus04	add	hl,de
+ 		ld	(hl),a
+		ret
+
+_nvRamGetData	ex	af,af'
+		ld	bc,peNvRamLocation
+		out	(c),a
+_nvRamGetData0	ld	bc,peNvRamData
+		in	a,(c)
+		ret
+
+_nvRamSetData	ex	af,af'
+; 		push	af
+		ld	bc,peNvRamLocation
+		out	(c),a
+		ld	bc,peNvRamData
+		ld	a,l
+		out	(c),a
+		ret
+
+
+;---------------------------------------
+; CLi² (Command Line Interface) parameters
+; 2013,2015 © breeze/fishbone crew
+;---------------------------------------
+
+
+
+
+ps2Status	db	#00
+ps2RepeatDefaut	db	#03
+ps2RepeatCounter db	#00
+ps2RepeatMode	db	#00
+ps2ScanCode	db	#00,#00,#00,#00				; текущий скан-код ps/2 клавиатуры (обновляется 1 код за прерывание)
+
+keyStatus	ds	131, #00	
+altStatusB	db	#00					; для сохранения статуса клавиши ALT
+ctrlStatusB	db	#00					; для сохранения статуса клавиши CTRL
+checkShiftKey	db	#01					; проверять нажата ли клаша шифт
+
+keyInsOver	db	#01					; переключение режима ввода строки Insert (#00) / Overwrite (#01)
+
+keyStatusE0	ds	125, #00
+
+keyLayoutSwitch	db	#00					; переключение раскладки 0 - EN, 1 - RU
+
+		;        x8  x0  x9  x1  xA  x2  xB  x3  xC  x4  xD  x5  xE  x6  xF  x7
+
+keyMap_E0
+; 		db	    #00,    #00,    #00,    #00,    #00,    #00,    #00,    #00		; 0x		Таблица расширенных клавиш
+; 		db	 #00,    #00,    #00,    #00,    #00,    #00,    #00,    #00
+; 		db	     #00,    #00,    #00,    #00,    #00,    #00,    #00,    #00	; 1x
+; 		db	 #00,    #00,    #00,    #00,    #00,    #00,    #00,    #00
+; 		db	     #00,    #00,    #00,    #00,    #00,    #00,    #00,    #00	; 2x
+; 		db	 #00,    #00,    #00,    #00,    #00,    #00,    #00,    #00
+; 		db	     #00,    #00,    #00,    #00,    #00,    #00,    #00,    #00	; 3x
+; 		db	 #00,    #00,    #00,    #00,    #00,    #00,    #00,    #00
+; 		db	     #00,    #00,    #00,    #00,    #00,    #00,    #00,    #00	; 4x
+; 		db	 #00,    #00,    "/",    #00,    #00,    #00,    #00,    #00
+; 		db	     #00,    #00,    #00,    #00,    #00,    #00,    #00,    #00	; 5x
+; 		db	 #00,    #00,    #00,    #00,    #00,    #00,    #00,    #00
+; 		db	    #00,    #00,    #00,    #00,    #00,    #00,     #00,    #00	; 6x
+		db	 #00,   aEnd,    #00, aCurLeft, aHome,   #00,    #00,    #00
+		db	   aInsert,aDelete, aCurDown,#00,aCurRight,aCurUp,  #00,    #00		; 7x
+		db	 #00,    #00, aPageDown, #00,    #00,  aPageUp,  #00,    #00
+
+
+
+
+		;        x8  x0  x9  x1  xA  x2  xB  x3  xC  x4  xD  x5  xE  x6  xF  x7	
+keyMap_0A	db	    #00,    aF9,    #00,    aF5,    aF3,    aF1,    aF2,    #00		; 0x		Таблица обычных клавиш
+		db	#00,   aF10,    aF8,    aF6,    aF4,    aTab,    "`",    #00
+		db	    #00,    #00,    #00,    #00,    #00,    "q",    "1",    #00		; 1x
+		db	#00,    #00,    "z",    "s",    "a",    "w",    "2",    #00
+		db	    #00,    "c",    "x",    "d",    "e",    "4",    "3",    #00		; 2x
+		db	#00,    " ",    "v",    "f",    "t",    "r",    "5",    #00
+		db	    #00,    "n",    "b",    "h",    "g",    "y",    "6",    #00		; 3x
+		db	#00,    #00,    "m",    "j",    "u",    "7",    "8",    #00
+		db	    #00,    ",",    "k",    "i",    "o",    "0",    "9",    #00		; 4x
+		db	#00,    ".",    "/",    "l",    ";",    "p",    "-",    #00
+		db	    #00,    #00,    "'",    #00,    "[",    "=",    #00,    #00		; 5x
+		db	#00,    #00,  aEnter,   "]",    #00,    "\\",   #00,    #00
+		db	    #00,    #00,    #00,    #00,    #00,    #00,aBackspace, #00		; 6x
+		db	#00,    "1",    #00,    "4",    "7",    #00,    #00,    #00
+		db	    "0",    ".",    "2",    "5",    "6",    "8",   aEsc,    #00		; 7x
+		db	aF11,   "+",    "3",    "-",    "*",    "9",    #00,    #00
+		db	     #00,    #00,    #00,    aF7,    #00,    #00,    #00,    #00	; 8x
+; 		db	 #00,    #00,    #00,    #00,    #00,    #00,    #00,    #00
+
+		;        x8  x0  x9  x1  xA  x2  xB  x3  xC  x4  xD  x5  xE  x6  xF  x7
+keyMap_0B	db	    #00,    aF9,    #00,    aF5,    aF3,    aF1,    aF2,    #00		; 0x		Таблица клавиш + shift
+		db	#00,    #00,    aF8,    aF6,    aF4,   aTab,    "~",    #00
+		db	    #00,    #00,    #00,    #00,    #00,    "Q",    "!",    #00		; 1x
+		db	#00,   aF10,    "Z",    "S",    "A",    "W",    "@",    #00
+		db	    #00,    "C",    "X",    "D",    "E",    "$",    "#",    #00		; 2x
+		db	#00,    " ",    "V",    "F",    "T",    "R",    "%",    #00
+		db	    #00,    "N",    "B",    "H",    "G",    "Y",    "^",    #00		; 3x
+		db	#00,    #00,    "M",    "J",    "U",    "&",    "*",    #00
+		db	    #00,    ",",    "K",    "I",    "O",    ")",    "(",    #00		; 4x
+		db	#00,    ">",    "?",    "L",    ":",    "P",    "_",    #00
+		db	    #00,    #00,    "\"",   #00,    "{",    "+",    #00,    #00		; 5x
+		db	#00,    #00,  aEnter,   "}",    #00,    "|",    #00,    #00
+		db	    #00,    #00,    #00,    #00,    #00,    #00,aBackspace, #00		; 6x
+		db	#00,    #00,    #00,    #00,    #00,    #00,    #00,    #00
+		db	    #00,    #00,    #00,    #00,    #00,    #00,   aEsc,    #00		; 7x
+		db	aF11,   "+",    #00,    "-",    "*",    #00,    #00,    #00
+		db	     #00,    #00,    #00,    aF7,    #00,    #00,    #00,    #00	; 8x
+; 		db	 #00,    #00,    #00,    #00,    #00,    #00,    #00,    #00
+
+
+
+		;        x8  x0  x9  x1  xA  x2  xB  x3  xC  x4  xD  x5  xE  x6  xF  x7
+keyMap_1A	db	    #00,    aF9,    #00,    aF5,    aF3,    aF1,    aF2,    #00		; 0x		Таблица обычных клавиш (русская раскладка)
+		db	#00,   aF10,    aF8,    aF6,    aF4,   aTab,    re1,    #00
+		db	    #00,    #00,    #00,    #00,    #00,    rii,    "1",    #00		; 1x	
+		db	#00,    #00,    rya,    ryi,    rf,     rc,     "2",    #00
+		db	    #00,    rs,     rch,     rv,     ru,    "4",    "3",    #00		; 2x
+		db	#00,    " ",     rm,     ra,     re,     rk,    "5",    #00
+		db	    #00,     rt,     ri,     rr,     rp,     rn,    "6",    #00		; 3x
+		db	#00,    #00,   rmzn,     ro,     rg,    "7",    "8",    #00
+		db	    #00,     rb,     rl,    rsh,    rsch,   "0",    "9",    #00		; 4x
+		db	#00,    ryu,    ".",     rd,    rzh,     rz,    "-",    #00
+		db	    #00,    #00,    re2,    #00,     rh,    "=",    #00,    #00		; 5x
+		db	#00,    #00,  aEnter,  rtzn,    #00,    "\\",   #00,    #00
+		db	    #00,    #00,    #00,    #00,    #00,    #00,aBackspace, #00		; 6x
+		db	#00,    "1",    #00,    "4",    "7",    #00,    #00,    #00
+		db	    "0",    ",",    "2",    "5",    "6",    "8",   aEsc,    #00		; 7x
+		db	aF11,   "+",    "3",    "-",    "*",    "9",    #00,    #00
+		db	     #00,    #00,    #00,    aF7,    #00,    #00,    #00,    #00	; 8x
+; 		db	 #00,    #00,    #00,    #00,    #00,    #00,    #00,    #00
+
+		;        x8  x0  x9  x1  xA  x2  xB  x3  xC  x4  xD  x5  xE  x6  xF  x7
+keyMap_1B	db	    #00,    aF9,    #00,    aF5,    aF3,    aF1,    aF2,    #00		; 0x		Таблица обычных клавиш (русская раскладка) + shift
+		db	#00,   aF10,    aF8,    aF6,    aF4,   aTab,    rE1,    #00
+		db	    #00,    #00,    #00,    #00,    #00,    rII,    "!",    #00		; 1x
+		db	#00,    #00,    rYA,    rYI,     rF,     rC,    "\"",   #00
+		db	    #00,     rS,    rCH,     rV,     rU,    ";",    rNN,    #00		; 2x
+		db	#00,    " ",     rM,     rA,     rE,     rK,    "%",    #00
+		db	    #00,     rT,     rI,     rR,     rP,     rN,    ":",    #00		; 3x
+		db	#00,    #00,   rMZN,     rO,     rG,    "?",    "*",    #00
+		db	    #00,     rB,     rL,    rSH,   rSCH,    ")",    "(",    #00		; 4x
+		db	#00,    rYU,    ".",     rD,    rZH,     rZ,    "_",    #00
+		db	    #00,    #00,    rE2,    #00,     rH,    "+",    #00,    #00		; 5x
+		db	#00,    #00,  aEnter,  rTZN,    #00,    "/",    #00,    #00
+		db	    #00,    #00,    #00,    #00,    #00,    #00,aBackspace, #00		; 6x
+		db	#00,    #00,    #00,    #00,    #00,    #00,    #00,    #00
+		db	    #00,    #00,    #00,    #00,    #00,    #00,   aEsc,    #00		; 7x
+		db	aF11,   "+",    #00,    "-",    "*",    #00,    #00,    #00
+		db	     #00,    #00,    #00,    aF7,    #00,    #00,    #00,    #00	; 8x
+; 		db	 #00,    #00,    #00,    #00,    #00,    #00,    #00,    #00
+
+fKeysSize	equ	16					; Количество байт отведённых под 1 команду
+
+fKeys		db	"help\n"				; F1
+		ds	11,#00
+		
+		db	"ls\n"					; F2
+		ds	13,#00
+		
+		db	"type "					; F3
+		ds	11,#00
+		
+		db	"edit "					; F4
+		ds	11,#00
+		db	"cd "					; F5
+		ds	13,#00
+		db	"rename "				; F6
+		ds	9,#00
+		db	"mkdir "				; F7
+		ds	10,#00
+		db	"delete "				; F8
+		ds	9,#00
+		db	"find "					; F9
+		ds	11,#00
+		db	"sh "					; F10
+		ds	13,#00
+		db	"pwd\n"					; F11
+		ds	12,#00
+
+rA		equ	128
+rB		equ	129
+rV		equ	130
+rG		equ	131
+rD		equ	132
+rE		equ	133
+rE1		equ	240
+rZH		equ	134
+rZ		equ	135
+rI		equ	136
+rII		equ	137
+rK		equ	138
+rL		equ	139
+rM		equ	140
+rN		equ	141
+rO		equ	142
+rP		equ	143
+rR		equ	144
+rS		equ	145
+rT		equ	146
+rU		equ	147
+rF		equ	148
+rH		equ	149
+rC		equ	150
+rCH		equ	151
+rSH		equ	152
+rSCH		equ	153
+rTZN		equ	154
+rYI		equ	155
+rMZN		equ	156
+rE2		equ	157
+rYU		equ	158
+rYA		equ	159
+
+ra		equ	160
+rb		equ	161
+rv		equ	162
+rg		equ	163
+rd		equ	164
+re		equ	165
+re1		equ	241
+rzh		equ	166
+rz		equ	167
+ri		equ	168
+rii		equ	169
+rk		equ	170
+rl		equ	171
+rm		equ	172
+rn		equ	173
+ro		equ	174
+rp		equ	175
+
+rr		equ	224
+rs		equ	225
+rt		equ	226
+ru		equ	227
+rf		equ	228
+rh		equ	229
+rc		equ	230
+rch		equ	231
+rsh		equ	232
+rsch		equ	233
+rtzn		equ	234
+ryi		equ	235
+rmzn		equ	236
+re2		equ	237
+ryu		equ	238
+rya		equ	239
+
+rNN		equ	252	; çíàê ¹
+
+;-------------------------------------------------------------------------------------
+;		equ	#01				; псевдо-коды ASCII для маппинга расширенных клавиш
+aInsert		equ	#02
+aDelete		equ	#03
+aHome		equ	#04
+aEnd		equ	#05
+aPageUp		equ	#06
+aPageDown	equ	#07
+aCurLeft	equ	#08
+aCurRight	equ	#09
+aCurDown	equ	#0a
+aCurUp		equ	#0b	
+;		equ	#0c
+aEnter		equ	#0d
+aBackspace	equ	#0e
+aTab		equ	#0f
+aEsc		equ	#10
+aF1		equ	#11
+aF2		equ	#12
+aF3		equ	#13
+aF4		equ	#14
+aF5		equ	#15
+aF6		equ	#16
+aF7		equ	#17
+aF8		equ	#18
+aF9		equ	#19
+aF10		equ	#1a
+aF11		equ	#1b
+
+;------------------------------------------------------------------------------------

@@ -1,0 +1,742 @@
+        relaxed on
+        cpu z80undoc
+HIGH:   FUNCTION X,((X>>8)&0xff)
+
+B_BLACK:macro
+        ex      af,af'
+        out     (0xfe),a
+        ex      af,af'
+        endm
+
+B_BLUE: macro
+        ld      a,1
+        out     (0xfe),a
+        endm
+
+B_RED:  macro
+        ld      a,2
+        out     (0xfe),a
+        endm
+
+B_GREEN:macro
+        ld      a,4
+        out     (0xfe),a
+        endm
+
+B_CYAN: macro
+        ld      a,5
+        out     (0xfe),a
+        endm
+
+B_YELL: macro
+        ld      a,6
+        out     (0xfe),a
+        endm
+
+bigbuff:equ     0x8000
+
+        org     0x6000
+;---------------------------------------
+        res     4,(iy+1)
+        ld      bc,0x7ffd
+        ld      a,0x17
+        out     (c),a
+        ld      a,0x07
+        ld      (0x5c48),a
+        ld      (0x5c8d),a
+        xor     a
+        out     (0xfe),a
+        call    zx_cls
+
+;read SSID and Password from file
+        ld      hl,bigbuff
+        push    hl
+        ld      de,0
+        ld      bc,0x0805
+        call    0x3d13
+        pop     hl
+p011:   ld      a,(hl)
+        jp      z,nopass
+        ld      de,str_wifipass
+        push    hl
+        call    ss_cm1
+        pop     hl
+        jr      z,p020
+        ld      bc,0x0010
+        add     hl,bc
+        ld      a,h
+        cp      HIGH(bigbuff+0x0900)
+        jr      nz,p011
+        jp      nopass
+p020:   push    hl
+        pop     ix
+        ld      l,(ix+0x0b)
+        ld      h,(ix+0x0c)
+        ld      (packsz),hl
+        ld      e,(ix+0x0e)
+        ld      d,(ix+0x0f)
+        ld      hl,ssidbuff
+        push    hl
+        ld      bc,0x0105
+        call    0x3d13
+        pop     hl
+        ld      de,(packsz)
+p021:   ld      a,d
+        or      e
+        jr      z,p029
+        ld      a,(hl)
+        or      a
+        jr      z,p029
+        cp      0x0d
+        jr      z,p022
+        cp      0x0a
+        jr      z,p022
+        inc     hl
+        dec     de
+        jr      p021
+p022:   xor     a
+        ld      (hl),a
+        inc     hl
+        dec     de
+        ld      a,d
+        or      e
+        jr      z,p029
+        ld      a,(hl)
+        or      a
+        jr      z,p029
+        cp      0x0d
+        jr      z,p022
+        cp      0x0a
+        jr      z,p022
+        ld      (passptr),hl
+p023:   inc     hl
+        dec     de
+        ld      a,d
+        or      e
+        jr      z,p029
+        ld      a,(hl)
+        or      a
+        jr      z,p029
+        cp      0x0d
+        jr      z,p029
+        cp      0x0a
+        jr      z,p029
+        jr      p023
+p029:   xor     a
+        ld      (hl),a
+       ex      af,af'    ;for B_BLACK
+
+p100:   ld      hl,p100
+        push    hl
+
+        ld      bc,0xc7ef
+        ld      de,0xfff1
+        out     (c),e           ;Set API mode 1
+        out     (c),d           ;Get Version
+        in      a,(c)
+        cp      0xff
+        jp      z,nozifi
+        ld      a,0x01
+        out     (c),a           ;Clear RX FIFO
+
+        ld      b,3
+p103:   push    bc
+        ld      de,25
+        ld      hl,cmd_ate0
+        call    send_cmd_wait_ok
+        pop     bc
+        jr      z,p104
+        djnz    p103
+        jp      x_err
+p104:
+;
+        ld      hl,msg_req_vers
+        call    zx_puts
+        ld      a,1
+        ld      (prnansw),a
+        ld      de,25
+        ld      hl,cmd_gmr
+        call    send_cmd_wait_ok
+        ld      a,0
+        ld      (prnansw),a
+        jp      nz,x_err
+;
+        ld      de,25
+        ld      hl,cmd_cwmode
+        call    send_cmd_wait_ok
+        jp      nz,x_err
+        ld      de,25
+        ld      hl,cmd_cwautoconn
+        call    send_cmd_wait_ok
+        jp      nz,x_err
+        ld      de,25
+        ld      hl,cmd_cwqap
+        call    send_cmd_wait_ok
+        jp      nz,x_err
+;
+p110:   ld      hl,msg_press_key
+        call    zx_puts
+        call    zx_getkey
+;
+        ld      hl,msg_ap_conn
+        call    zx_puts
+        ld      de,1000
+        ld      hl,cmd_cwjap1
+        call    zifi_putstr
+        ld      hl,ssidbuff
+        call    zifi_putstr
+        ld      hl,cmd_cwjap2
+        call    zifi_putstr
+        ld      hl,(passptr)
+        call    zifi_putstr
+        ld      hl,cmd_cwjap3
+        call    send_cmd_wait_ok
+        jp      z,p120
+        call    x_err
+        jr      p110
+;
+p120:   ld      hl,msg_ipcfg
+        call    zx_puts
+        ld      a,1
+        ld      (prnansw),a
+        ld      de,25
+        ld      hl,cmd_cipsta
+        call    send_cmd_wait_ok
+        ld      a,0
+        ld      (prnansw),a
+        call    nz,x_err
+;
+p199:   ld      hl,msg_press_key
+        call    zx_puts
+        call    zx_getkey
+;
+p200:   call    zx_cls
+        ld      hl,bigbuff
+        ld      (ptr),hl
+        ld      de,bigbuff+1
+        ld      bc,16384
+        ld      (hl),0
+        ldir
+        ld      hl,msg_menuload
+        call    zx_puts
+p201:   call    zx_getkey
+        cp      0x30
+        jp      z,disconn
+        cp      0x31
+        jr      c,p201
+        cp      0x3a
+        jr      nc,p201
+        sub     0x31
+        ld      (resnum),a
+
+        ld      bc,0xc7ef
+        ld      a,0x01
+        out     (c),a           ;Clear RX FIFO
+
+        ld      de,250
+        ld      hl,cmd_conn2site
+        call    send_cmd_wait_ok
+        jp      z,p210
+        cp      0xfa
+        jp      z,p210
+        call    x_err
+        jr      p199
+p210:
+        ld      hl,cmd_cipsend
+        call    zifi_putstr
+        ld      a,(resnum)
+        ld      l,a
+        ld      h,0
+        add     hl,hl
+        add     hl,hl
+        ld      de,tabl_ptrurl
+        add     hl,de
+        ld      e,(hl)
+        inc     hl
+        ld      d,(hl)
+        ex      de,hl
+        call    zifi_putstr
+        ld      hl,str_crlf
+        call    zifi_putstr
+
+        ld      de,50
+        call    set_timeout50
+        call    wait_ok
+        jp      z,p211
+        call    x_err
+        jp      p199
+
+p211:   call    zifi_getchar
+        jr      z,p211
+        cp      '>'
+        jr      nz,p211
+
+        ld      hl,str_get1
+        call    zifi_putstr
+        ld      a,(resnum)
+        ld      l,a
+        ld      h,0
+        add     hl,hl
+        inc     hl
+        add     hl,hl
+        ld      de,tabl_ptrurl
+        add     hl,de
+        ld      e,(hl)
+        inc     hl
+        ld      d,(hl)
+        ex      de,hl
+        call    zifi_putstr
+        ld      hl,str_get2
+        call    zifi_putstr
+
+        ld      de,50
+        call    set_timeout50
+        call    wait_ok
+        cp      0xfd
+        jp      z,p220
+        call    x_err
+        jp      p199
+
+p220:   ld      de,1000
+        call    set_timeout50
+
+p22a:   ld      hl,strbuff
+        ld      (hl),0
+        call    rdipd
+        ld      a,(strbuff)
+        or      a
+        jr      nz,p221
+        call    x_tout
+        jp      p199
+p221:   ld      de,str_ipd
+        call    ss_cmp
+        jr      z,p222
+        call    x_err
+        jp      p199
+p222:
+        ld      hl,0
+        ld      de,strbuff+7
+p223:   ld      a,(de)
+        inc     de
+        cp      ':'
+        jr      z,p225
+        sub     0x30
+        ld      c,l
+        ld      b,h
+        add     hl,hl
+        add     hl,hl
+        add     hl,bc
+        add     hl,hl
+        ld      c,a
+        ld      b,0
+        add     hl,bc
+        jr      p223
+p225:   ld      (packsz),hl
+        ex      de,hl
+        ld      hl,(maxpsz)
+        xor     a
+        sbc     hl,de
+        jr      nc,p226
+        ld      (maxpsz),de
+p226:
+        ld      hl,(ptr)
+p231:   ld      bc,0xc0ef
+        B_RED
+        in      a,(c)
+        B_BLACK
+        jr      nz,p232
+        call    check_timeout
+        jr      c,p231
+        call    x_tout
+        jp      p199
+p232:   cp      0xbf            ;
+        jr      c,p233          ;
+        ld      a,0xbf          ; д
+p233:   ld      c,a             ; о
+        ld      a,d             ; л
+        or      a               ; г
+        jr      nz,p234         ; о
+        ld      a,e             ;
+        cp      c               ; з
+        jr      nc,p234         ; а
+        ld      c,e             ; п
+p234:   ex      de,hl           ; р
+        xor     a               ; я
+        ld      b,a             ; г
+        sbc     hl,bc           ; а
+        ex      de,hl           ; е
+        ld      b,c             ; м
+        ld      c,0xef          ;
+        B_GREEN
+        inir                    ; и быстро едем
+        B_BLACK
+        ld      a,d
+        or      e
+        jr      nz,p231
+        ld      (ptr),hl
+
+        ld      hl,(packsz)
+maxpsz: equ     $+1
+        ld      de,0
+        xor     a
+        sbc     hl,de
+        jp      nc,p22a
+;
+        ld      hl,bigbuff
+p241:   ld      a,(hl)
+        inc     hl
+p242:   cp      10
+        jr      nz,p241
+        ld      a,(hl)
+        inc     hl
+        cp      13
+        jr      nz,p242
+        inc     hl
+
+        ld      a,(resnum)
+        cp      3
+        jp      c,pscr0
+        cp      6
+        jp      c,pgiga0
+;pmus0:
+        push    hl
+        ex      de,hl
+        ld      hl,(ptr)
+        xor     a
+        sbc     hl,de
+        ld      c,l
+        ld      b,h
+        pop     hl
+        ld      de,0xc86e
+        ldir
+        ld      hl,vtpl
+        ld      de,0xc000
+        ld      bc,sz_vtpl
+        ldir
+        ld      hl,msg_musply
+        call    zx_puts
+        call    0xc000
+        ei
+        res     5,(iy+1)
+pmus1:  halt
+        call    0xc005
+        bit     5,(iy+1)
+        jr      z,pmus1
+        call    0xc008
+        jp      p200
+;
+pgiga0: ld      de,0x4000
+        ld      bc,0x1b00
+        ldir
+        ld      de,0xc000
+        ld      bc,0x1b00
+        ldir
+        res     5,(iy+1)
+        ld      bc,0x7ffd
+pgiga1: halt
+        ld      a,0x1f
+        out     (c),a
+        halt
+        ld      a,0x17
+        out     (c),a
+        bit     5,(iy+1)
+        jr      z,pgiga1
+        jp      p200
+;
+pscr0:  ld      de,0x4000
+        ld      bc,0x1b00
+        ldir
+        call    zx_getkey
+        jp      p200
+;------------------------------
+x_err:  ld      hl,msg_error
+        cp      1
+        jr      nz,x_er1
+x_tout: ld      hl,msg_timeout
+x_er1:  call    zx_puts
+        ret
+;------------------------------
+nopass: ld      hl,msg_nopassfile
+        jr      nhlt
+nozifi: ld      hl,msg_nozifi
+nhlt:   call    zx_puts
+        di
+        jr      $-1
+;------------------------------
+disconn:ld      hl,cmd_cwqap
+        call    send_cmd_wait_ok
+        jp      0
+;------------------------------
+send_cmd_wait_ok:
+        push    hl
+        call    set_timeout50
+        pop     hl
+        call    zifi_putstr
+wait_ok:ld      hl,strbuff
+        call    rdstr
+        ld      a,(strbuff)
+        or      a
+        jr      nz,_scwo1
+        inc     a
+        ret
+_scwo1: ld      a,(prnansw)
+        or      a
+        jr      z,_scwo2
+        ld      hl,strbuff
+        call    zx_puts
+_scwo2: ld      de,str_ok
+        call    ss_cmp
+        ld      a,0x00
+        jr      z,_scwo9
+        ld      de,str_fail
+        call    ss_cmp
+        ld      a,0xff
+        jr      z,_scwo9
+        ld      de,str_error
+        call    ss_cmp
+        ld      a,0xfe
+        jr      z,_scwo9
+        ld      de,str_send_ok
+        call    ss_cmp
+        ld      a,0xfd
+        jr      z,_scwo9
+        ld      de,str_already_con
+        call    ss_cmp
+        ld      a,0xfa
+        jr      nz,wait_ok
+_scwo9: or      a
+        ret
+;------------------------------
+rdstr:  call    zifi_getchar
+        jr      z,rdst2
+        cp      10              ;LF
+        jr      z,rdst3
+        ld      (hl),a
+        inc     hl
+        jr      rdstr
+rdst2:  call    check_timeout
+        jr      c,rdstr
+rdst3:  ld      (hl),0
+        ret
+;------------------------------
+rdipd:  call    zifi_getchar
+        jr      z,ripd2
+        ld      (hl),a
+        inc     hl
+        cp      ':'
+        ret     z
+        jr      rdipd
+ripd2:  call    check_timeout
+        jr      c,rdipd
+        ret
+;------------------------------
+ss_cmp: ld      hl,strbuff
+ss_cm1: ld      a,(de)
+        or      a
+        ret     z
+        inc     de
+        cpi
+        jr      z,ss_cm1
+        ret
+;------------------------------
+zifi_getchar:
+        ld      bc,0xc0ef
+        B_RED
+        in      a,(c)
+        B_BLACK
+        ret     z
+        ld      b,0
+        B_CYAN
+        in      a,(c)
+        B_BLACK
+        dec     b
+        ret
+;------------------------------
+zifi_putstr:
+;        push    hl
+;        call    zx_puts
+;        pop     hl
+        ld      bc,0xc1ef
+_zfpst0:
+        B_BLUE
+        in      a,(c)
+        B_BLACK
+        jr      z,_zfpst0
+        cp      0xbf
+        jr      c,_zfpst1
+        ld      a,0xbf
+_zfpst1:ld      b,a
+_zfpst2:ld      a,(hl)
+        or      a
+        ret     z
+        B_YELL
+        outi
+        B_BLACK
+        jr      nz,_zfpst2
+        jr      zifi_putstr
+;------------------------------
+zx_putchar_safe:
+        cp      10              ;LF
+        ret     z
+        cp      13              ;CR
+        jr      z,_putc1
+        cp      0x20
+        jr      c,_putc2
+        cp      0x80
+        jr      c,_putc1
+_putc2: ld      a,0x7f
+_putc1: push    hl
+        rst     0x10
+        pop     hl
+        ret
+;------------------------------
+zx_puts:ld      a,0xff
+        ld      (0x5c8c),a
+_puts1: ld      a,(hl)
+        inc     hl
+        or      a
+        ret     z
+        call    zx_putchar_safe
+        jr      _puts1
+;------------------------------
+zx_getkey:
+        res     5,(iy+1)
+_getk1: bit     5,(iy+1)
+        jr      z,_getk1
+        ld      a,(iy-50)
+        ret
+;------------------------------
+zx_cls: ld      a,2
+        ld      (0x5c6b),a
+        call    0x0d6b
+        ld      a,2
+        call    0x1601
+        xor     a
+        ld      (0x5c6b),a
+        ret
+;------------------------------
+set_timeout50:
+        ld      hl,(0x5c78)
+        add     hl,de
+        ld      (tmout),hl
+        ret
+;------------------------------
+check_timeout:
+        push    hl
+        push    de
+        ld      de,(tmout)
+        ld      hl,(0x5c78)
+        xor     a
+        sbc     hl,de
+        pop     de
+        pop     hl
+        ret
+;------------------------------
+tmout:  defw    0
+ptr:    defw    0
+packsz: defw    0
+passptr:defw    str_empty
+resnum: defb    0
+prnansw:defb    0
+;------------------------------
+vtpl:
+        listing off
+        include "vtplayer.inc"
+        listing on
+sz_vtpl:equ     $-vtpl
+;------------------------------
+tabl_ptrurl:
+        defw    str_rqsz1,str_uri1
+        defw    str_rqsz2,str_uri2
+        defw    str_rqsz3,str_uri3
+        defw    str_rqsz4,str_uri4
+        defw    str_rqsz5,str_uri5
+        defw    str_rqsz6,str_uri6
+        defw    str_rqsz7,str_uri7
+        defw    str_rqsz8,str_uri8
+        defw    str_rqsz9,str_uri9
+;------------------------------
+msg_nozifi:     defb    13,"- No ZiFi-API detect! -",0
+msg_timeout:    defb    13,"- Timeout! -",13,0
+msg_error:      defb    13,"- Error! -",13,0
+
+msg_req_vers:   defb    "Firmware version:",13,0
+msg_press_key:  defb    "Press a key",13,0
+msg_ap_conn:    defb    "Connect to AccessPoint...",13,0
+msg_ipcfg:      defb    "IP config info...",13,0
+msg_menuload:   defb    "Now, we can try to load some",13
+                defb    "pre-defined resources",13
+                defb    "from the Internet.",13
+                defb    "1. scr #1",13
+                defb    "2. scr #2",13
+                defb    "3. scr #3",13
+                defb    "4. gigascr #1",13
+                defb    "5. gigascr #2",13
+                defb    "6. gigascr #3",13
+                defb    "7. pt3 #1",13
+                defb    "8. pt3 #2",13
+                defb    "9. pt3 #3",13,13
+                defb    "0. WiFi disconnect",13,0
+msg_musply:     defb    13,"PT3-module playing",0
+
+cmd_ate0:       defb    "ATE0"
+str_crlf:       defb    13,10
+str_empty:      defb    0
+cmd_gmr:        defb    "AT+GMR",13,10,0
+cmd_cwmode:     defb    "AT+CWMODE_DEF=1",13,10,0
+cmd_cwautoconn: defb    "AT+CWAUTOCONN=0",13,10,0
+cmd_cwqap:      defb    "AT+CWQAP",13,10,0
+cmd_cwjap1:     defb    "AT+CWJAP_CUR=",0x22,0
+cmd_cwjap2:     defb    0x22,0x2c,0x22,0
+cmd_cwjap3:     defb    0x22,13,10,0
+cmd_cipsta:     defb    "AT+CIPSTA?",13,10,0
+cmd_conn2site:  defb    "AT+CIPSTART=",0x22,"TCP",0x22,",",0x22
+                defb    "zxart.ee"                              ; site
+                defb    0x22,",80",13,10,0
+cmd_cipsend:    defb    "AT+CIPSEND=",0
+
+str_get1:       defb    "GET ",0 ;size=4
+str_get2:       defb    " HTTP/1.1",13,10 ;size=125
+                defb    "Host: zxart.ee",13,10
+                defb    "User-Agent: ESP8266-probe2 (ZX Evolution; CPU Z80; RAM 4096Kb)",13,10    ; show off ;)
+                defb    "Accept: */*",13,10
+                defb    "Connection: close",13,10,13,10,0
+
+str_uri1:       defb    "/file/id:84830/filename:Vassa_-_ZX_Moonwalking_%282016%29_%28DiHalt_Lite_2016%2C_2%29.scr",0 ;size=89
+str_rqsz1:      defb    "218",0 ;218=4+89+125=get1+uri1+get2
+
+str_uri2:       defb    "/file/id:84827/filename:dman_-_Masked_Avenger_%282016%29_%28DiHalt_Lite_2016%2C_3%29.scr",0 ;size=88
+str_rqsz2:      defb    "217",0 ;217=4+88+125=get1+uri2+get2
+
+str_uri3:       defb    "/file/id:84828/filename:Tzerra_-_Nutcracker_%282016%29_%28DiHalt_Lite_2016%2C_4%29.scr",0 ;size=86
+str_rqsz3:      defb    "215",0 ;215=4+86+125=get1+uri3+get2
+
+str_uri4:       defb    "/file/id:84829/filename:Lilka_-_Snegovik_%282016%29_%28DiHalt_Lite_2016%2C_6%29.img",0 ;size=83
+str_rqsz4:      defb    "212",0 ;212=4+83+125=get1+uri4+get2
+
+str_uri5:       defb    "/file/id:83698/filename:Dimidrol_-_Capri_Rendezvous_%282015%29_%28ArtField_2015%2C_1%29.img",0 ;size=91
+str_rqsz5:      defb    "220",0 ;220=4+91+125=get1+uri5+get2
+
+str_uri6:       defb    "/file/id:61454/filename:Tutty_-_Kpacku_Final_Logo_%282015%29_%28Chaos_Constructions_2015%29.img",0 ;size=95
+str_rqsz6:      defb    "224",0 ;224=4+95+125=get1+uri6+get2
+
+str_uri7:       defb    "/file/id:84856/filename:MmcM_-_Winter_Frosts_%282016%29_%28DiHalt_Lite_2016%2C_1%29.pt3",0 ;size=87
+str_rqsz7:      defb    "216",0 ;216=4+87+125=get1+uri7+get2
+
+str_uri8:       defb    "/file/id:84853/filename:Quiet_-_Dream_Catcher_%282016%29_%28DiHalt_Lite_2016%2C_2%29.pt3",0 ;size=88
+str_rqsz8:      defb    "217",0 ;217=4+88+125=get1+uri8+get2
+
+str_uri9:       defb    "/file/id:84858/filename:Scalesmann_-_losing_the_reason_%282016%29_%28DiHalt_Lite_2016%2C_3%29.pt3",0 ;size=97
+str_rqsz9:      defb    "226",0 ;226=4+97+125=get1+uri9+get2
+
+str_ok:         defb    "OK",13,0
+str_error:      defb    "ERROR",13,0
+str_fail:       defb    "FAIL",13,0
+str_send_ok:    defb    "SEND OK",13,0
+str_already_con:defb    "ALREADY CONNECT",13,0
+str_ipd:        defb    13,10,"+IPD,",0
+ssidbuff:
+msg_nopassfile: defb    13,"- File 'wifipass' not found! -",0
+str_wifipass:   defb    "wifipass",0
+strbuff:        equ     ssidbuff+256
+;------------------------------

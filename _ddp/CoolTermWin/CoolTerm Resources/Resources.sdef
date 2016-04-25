@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dictionary SYSTEM "file://localhost/System/Library/DTDs/sdef.dtd">
+<dictionary title="Resources">
+	<suite name="Message Suite" code="RBMS" description="v1.4.2">
+		<command name="LoadSetting" code="RBMSload" description="Loads a settings file, returns ID of window if successful">
+			<direct-parameter description="FilePath as string" type="text"/>
+			<result description="ID as integer" type="integer"/>
+		</command>
+		<command name="CloseWindow" code="RBMSclos" description="Closes a terminal windows">
+			<direct-parameter description="ID as integer" type="text"/>
+		</command>
+		<command name="Connect" code="RBMSconn" description="Opens the serial port, returns true on success">
+			<direct-parameter description="ID as integer" type="text"/>
+			<result description="success as boolean" type="boolean"/>
+		</command>
+		<command name="Disconnect" code="RBMSdisc" description="Closes the serial port">
+			<direct-parameter description="ID as integer" type="text"/>
+		</command>
+		<command name="Write" code="RBMSwrit" description="Writes Data to the serial port">
+			<direct-parameter description="ID as integer, Data as string" type="text"/>
+		</command>
+		<command name="WriteLine" code="RBMSwrtl" description="Writes a line of text, terminated by the end of line character specified in the connection settings">
+			<direct-parameter description="ID as integer, Data as string" type="text"/>
+		</command>
+		<command name="Read" code="RBMSread" description="Reads a specified number of characters from the ReceiveBuffer">
+			<direct-parameter description="ID as integer, NumChar as integer" type="text"/>
+			<result description="Data as string" type="text"/>
+		</command>
+		<command name="ReadAll" code="RBMSrdal" description="Reads all data from the receive buffer">
+			<direct-parameter description="ID as integer" type="text"/>
+			<result description="Data as string" type="text"/>
+		</command>
+		<command name="BytesAvailable" code="RBMSbtav" description="Returns the number of bytes currently in the receive buffer">
+			<direct-parameter description="ID as integer" type="text"/>
+			<result description="NumBytes as integer" type="integer"/>
+		</command>
+		<command name="LookAhead" code="RBMSlook" description="Returns the receive buffer contents without removing them">
+			<direct-parameter description="ID as integer" type="text"/>
+			<result description="Data as string" type="text"/>
+		</command>
+		<command name="ClearBuffer" code="RBMSclrb" description="Clears the Receive Buffer">
+			<direct-parameter description="ID as integer" type="text"/>
+		</command>
+		<command name="Hex2Str" code="RBMShx2s" description="Converts a hex string to a plain string">
+			<direct-parameter description="HexStr as String" type="text"/>
+			<result description="PlainStr as string" type="text"/>
+		</command>
+		<command name="Str2Hex" code="RBMSs2hx" description="Converts a plain string to a hex string">
+			<direct-parameter description="PlainStr as string" type="text"/>
+			<result description="HexStr as string" type="text"/>
+		</command>
+		<command name="Poll" code="RBMSpoll" description="Polls the serial port and copies the data from the serial port receive buffer to the CoolTerm receive buffer">
+			<direct-parameter description="ID as integer" type="text"/>
+		</command>
+		<command name="WindowCount" code="RBMSwcnt" description="Returns the number of terminal windows">
+			<result description="NumWindows as integer" type="integer"/>
+		</command>
+		<command name="WindowName" code="RBMSwnme" description="Returns the name of the window with the specified index">
+			<direct-parameter description="index as integer" type="text"/>
+			<result description="WinName as string" type="text"/>
+		</command>
+		<command name="SendTextFile" code="RBMSsend" description="Sends the textfile with the given path">
+			<direct-parameter description="ID as integer, FilePath as string" type="text"/>
+			<result description="success as boolean" type="boolean"/>
+		</command>
+		<command name="LastErrorCode" code="RBMSlerr" description="Returns the last error code occured in the specfied window">
+			<direct-parameter description="ID as integer" type="text"/>
+			<result description="ErrorCode as integer" type="integer"/>
+		</command>
+		<command name="Quit" code="RBMSquit" description="Quits CoolTerm"/>
+		<command name="CaptureStart" code="RBMScpst" description="Captures received data into a text file with the specified Path">
+			<direct-parameter description="ID as integer, FilePath as integer" type="text"/>
+			<result description="success as boolean" type="boolean"/>
+		</command>
+		<command name="CapturePause" code="RBMScpps" description="Pauses the current Capture">
+			<direct-parameter description="ID as integer" type="text"/>
+		</command>
+		<command name="CaptureStop" code="RBMScpsp" description="Stops the current capture">
+			<direct-parameter description="ID as integer" type="text"/>
+		</command>
+		<command name="CaptureResume" code="RBMScprs" description="Resumes the current capture">
+			<direct-parameter description="ID as integer" type="text"/>
+		</command>
+		<command name="SendBreak" code="RBMSsbrk" description="Sends the break signal">
+			<direct-parameter description="ID as integer" type="text"/>
+		</command>
+		<command name="SetDTR" code="RBMSsdtr" description="Sets the value of the DTR status signal">
+			<direct-parameter description="ID as integer, value as boolean" type="text"/>
+		</command>
+		<command name="GetDTR" code="RBMSgdtr" description="Retrieves the value of the DTR status signal">
+			<direct-parameter description="ID as integer" type="text"/>
+			<result description="value as boolean" type="boolean"/>
+		</command>
+		<command name="SetRTS" code="RBMSsrts" description="Sets the value of the RTS status signal">
+			<direct-parameter description="ID as integer, value as boolean" type="text"/>
+		</command>
+		<command name="GetRTS" code="RBMSgrts" description="Retrieves the value of the RTS status signal">
+			<direct-parameter description="ID as integer" type="text"/>
+			<result description="value as boolean" type="boolean"/>
+		</command>
+		<command name="IsConnected" code="RBMSisco" description="Checks the connection state of the serial port, returns true on success">
+			<direct-parameter description="ID as integer" type="text"/>
+			<result description="success as boolean" type="boolean"/>
+		</command>
+		<command name="ResetPort" code="RBMSrset" description="Resets the port">
+			<direct-parameter description="ID as integer" type="text"/>
+		</command>
+		<command name="FlushPort" code="RBMSflsh" description="Flushes the port">
+			<direct-parameter description="ID as integer" type="text"/>
+		</command>
+		<command name="WindowID" code="RBMSwnid" description="Returns the ID of the window with the specified index">
+			<direct-parameter description="index as integer" type="text"/>
+			<result description="ID as integer" type="integer"/>
+		</command>
+		<command name="BytesLeftToSend" code="RBMSblts" description="Returns the number of byte left to send">
+			<direct-parameter description="ID as integer" type="text"/>
+			<result description="NumBytes as integer" type="integer"/>
+		</command>
+		<command name="IndexOfWindowID" code="RBMSindx" description="Returns the index of the passed ID">
+			<direct-parameter description="ID as integer" type="text"/>
+			<result description="index as integer" type="integer"/>
+		</command>
+		<command name="NewWindow" code="RBMSneww" description="Opens a new window">
+			<result description="ID as integer" type="integer"/>
+		</command>
+		<command name="GetCTS" code="RBMSgcts" description="Retrieves the value of the CTS status signal">
+			<direct-parameter description="ID as integer" type="text"/>
+			<result description="value as boolean" type="boolean"/>
+		</command>
+		<command name="GetDSR" code="RBMSgdsr" description="Retrieves the value of the DSR status signal">
+			<direct-parameter description="ID as integer" type="text"/>
+			<result description="value as boolean" type="boolean"/>
+		</command>
+		<command name="GetDCD" code="RBMSgdcd" description="Retrieves the value of the DCD status signal">
+			<direct-parameter description="ID as integer" type="text"/>
+			<result description="value as boolean" type="boolean"/>
+		</command>
+		<command name="GetRI" code="RBMSgris" description="Retrieves the value of the RI status signal">
+			<direct-parameter description="ID as integer" type="text"/>
+			<result description="value as boolean" type="boolean"/>
+		</command>
+	</suite>
+</dictionary>

@@ -1,0 +1,772 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru-ru" lang="ru-ru"><head>
+  
+  <!-- base href="http://microsin.net/adminstuff/hardware/esp8266-at-commands-testing.html" -->
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="robots" content="index, follow">
+  <meta name="keywords" content="ESP8266, ESP-01, TCP, UDP, AT">
+  
+  <meta name="author" content="microsin">
+  <meta name="description" content="Практическая работа с модулем ESP-01 (установка соединения, передача данных).">
+  
+  <title>ESP8266: пример тестирования команд AT | hardware | adminstuff</title>
+  <link href="http://microsin.net/component/option,com_jcomments/format,raw/object_group,com_content/object_id,1866/task,rss/" rel="alternate" type="application/rss+xml" title="ESP8266: пример тестирования команд AT">
+  <link rel="stylesheet" href="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/style.css" type="text/css">
+  <link rel="stylesheet" href="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/acesearch.css" type="text/css">
+  <script type="text/javascript" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/proofreader.js"></script>
+  <script type="text/javascript" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/xajax.js"></script>
+  <script type="text/javascript" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/jcomments-v2.js"></script>
+  <script type="text/javascript" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/ajax.js"></script>
+  <script type="text/javascript" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/mootools.js"></script>
+  <script type="text/javascript" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/caption.js"></script>
+  <script type="text/javascript" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/autocompleter12.js"></script>
+  <script language="JavaScript" type="text/javascript"><!-- // --><![CDATA[
+				function pr_setup() {
+					xajaxRequestUri='http://microsin.net/index.php?option=com_proofreader&task=sendmistake&tmpl=component';
+					xajaxWaitCursor=true;
+					xajaxDefinedPost=1;
+					xajaxDebug=false;
+					xajaxStatusMessages=false;
+					xajaxDefinedGet=0;
+				}
+
+			var xajaxRequestUri='http://microsin.net/index.php?option=com_proofreader&task=sendmistake&tmpl=component';
+			var xajaxWaitCursor=true;
+			var xajaxDefinedPost=1;
+			var xajaxDebug=false;
+			var xajaxStatusMessages=false;
+			var xajaxDefinedGet=0;
+
+			function addEventPR(obj, evType, fn){ 
+				 if (obj.addEventListener){ 
+					obj.addEventListener(evType, fn, false); 
+					return true; 
+				} else if (obj.attachEvent){
+					var r = obj.attachEvent("on"+evType, fn); 
+					return r; 
+				} else { 
+					return false; 
+				} 
+			}
+
+		 var pr_alt = false;  var pr_shift = true;  var pr_ctrl = false; 
+				var PReader_cur_page = "http://microsin.net/index.php?option=com_content&Itemid=43&catid=20&id=1866&lang=ru&view=article";
+				addEventPR(window, 'load',  addDivWindow);
+				addEventPR(window, 'load',  keyPressInit);
+			// ]]></script>
+  <script type="text/javascript">
+/*<![CDATA[*/
+	var jax_live_site = 'http://microsin.net/index.php';
+	var jax_site_type = '1.5';
+/*]]>*/
+</script><script type="text/javascript" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/ajax_1.js"></script>
+  <link rel="stylesheet" type="text/css" href="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/style_002.css">
+<link rel="stylesheet" type="text/css" href="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/comment_style.css">
+
+<script type="text/javascript">
+/*<![CDATA[*/
+var jc_option           = "";
+var jc_autoUpdate       = "0";
+var jc_update_period    = 300*1000;
+var jc_orderBy          = "1";
+var jc_livesite_busyImg = "http://microsin.net/components/com_jomcomment/busy.gif";
+var jc_username         = "";
+var jc_email            = "";
+var jc_commentForm;
+/*]]>*/
+</script>
+
+<link rel="stylesheet" href="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/system.css" type="text/css">
+<link rel="stylesheet" href="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/general.css" type="text/css">
+<link rel="stylesheet" href="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/template_css.css" type="text/css">
+<!-- <link rel="shortcut"   href="/templates/microsin/images/favicon16x16-8b.gif" type="image/x-icon"/> -->
+<link rel="shortcut icon" href="http://microsin.net/templates/microsin/images/favicon16x16-8b.gif">
+<meta http-equiv="Content-Language" content="en"><style id="ya_share_style" type="text/css">.b-share-popup-wrap{z-index:1073741823;position:absolute;width:500px}.b-share-popup{position:absolute;z-index:1073741823;border:1px solid #888;background:#FFF;color:#000}.b-share-popup-wrap .b-share-popup_down{top:0}.b-share-popup-wrap .b-share-popup_up{bottom:0}.b-share-popup-wrap_state_hidden{position:absolute!important;top:-9999px!important;right:auto!important;bottom:auto!important;left:-9999px!important;visibility:hidden!important}.b-share-popup,x:nth-child(1){border:0;padding:1px!important}@media all and (resolution=0){.b-share-popup,x:nth-child(1),x:-o-prefocus{padding:0!important;border:1px solid #888}}.b-share-popup__i{display:-moz-inline-box;display:inline-block;padding:5px 0!important;overflow:hidden;vertical-align:top;white-space:nowrap;visibility:visible;background:#FFF;-webkit-box-shadow:0 2px 9px rgba(0,0,0,.6);-moz-box-shadow:0 2px 9px rgba(0,0,0,.6);box-shadow:0 2px 9px rgba(0,0,0,.6)}.b-share-popup__item{font:1em/1.25em Arial,sans-serif;display:block;padding:5px 15px!important;white-space:nowrap;background:#FFF}.b-share-popup__item,a.b-share-popup__item:link,a.b-share-popup__item:visited{text-decoration:none!important;border:0!important}a.b-share-popup__item{cursor:pointer}a.b-share-popup__item .b-share-popup__item__text{display:inline;text-decoration:underline;color:#1A3DC1}a.b-share-popup__item:hover{word-spacing:0}a.b-share-popup__item:hover .b-share-popup__item__text{color:red;cursor:pointer}.b-share-popup__icon{display:-moz-inline-box;display:inline-block;margin:-3px 0 0;padding:0 5px 0 0!important;vertical-align:middle}.b-share-popup__icon_input{width:21px;height:16px;margin-top:-6px;padding:0!important}.b-share-popup__icon__input{margin-right:0;margin-left:2px;vertical-align:top}.b-share-popup__spacer{display:block;padding-top:10px!important}.b-share-popup__header{font:86%/1em Verdana,sans-serif;display:block;padding:10px 15px 5px!important;color:#999}.b-share-popup__header_first{padding-top:5px!important}.b-share-popup__input{font:86%/1em Verdana,sans-serif;display:block;padding:5px 15px!important;color:#999;text-align:left}.b-share-popup__input__input{font:1em/1em Verdana,sans-serif;display:block;width:10px;margin:5px 0 0;-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box;resize:none;text-align:left;direction:ltr}.b-share-popup_down .b-share-popup_with-link .b-share-popup__input_link{position:absolute;top:5px;right:0;left:0}.b-share-popup_up .b-share-popup_with-link .b-share-popup__input_link{position:absolute;right:0;bottom:5px;left:0}.b-share-popup_down .b-share-popup_with-link{padding-top:55px!important}.b-share-popup_up .b-share-popup_with-link{padding-bottom:55px!important}.b-share-popup_down .b-share-popup_expandable .b-share-popup__main{padding-bottom:25px!important}.b-share-popup_up .b-share-popup_expandable .b-share-popup__main{padding-top:25px!important}.b-share-popup_down .b-share-popup_yandexed{padding-bottom:10px!important}.b-share-popup_up .b-share-popup_yandexed{padding-top:10px!important}.b-share-popup__yandex{position:absolute;right:4px;bottom:2px;font:78.125%/1em Verdana,sans-serif;padding:3px!important;background:0 0}a.b-share-popup__yandex:link,a.b-share-popup__yandex:visited{color:#C6C5C5;text-decoration:none}a.b-share-popup__yandex:link:hover,a.b-share-popup__yandex:visited:hover{color:red;text-decoration:underline}.b-share-popup_up .b-share-popup__yandex{top:2px;bottom:auto}.b-share-popup_expandable .b-share-popup__yandex{right:auto;left:4px}.b-share-popup_to-right .b-share-popup_expandable .b-share-popup__yandex{right:4px;left:auto}.b-share-popup__expander .b-share-popup__item{position:absolute;bottom:5px;font:86%/1em Verdana,sans-serif;margin:10px 0 0;padding:5px 10px!important;cursor:pointer;color:#999;background:0 0}.b-share-popup_to-right,.b-share-popup_to-right .b-share-popup__expander{direction:rtl}.b-share-popup_to-right .b-share-popup__expander .b-share-popup__icon{padding:0 0 0 5px!important}.b-share-popup_up .b-share-popup__expander .b-share-popup__item{top:-5px;bottom:auto}.b-share-popup__expander .b-share-popup__item:hover .b-share-popup__item__text{text-decoration:underline}.b-share-popup__expander .b-ico_action_rarr,.b-share-popup_to-right .b-share-popup__expander .b-ico_action_larr,.b-share-popup_full .b-share-popup__expander .b-ico_action_larr,.b-share-popup_to-right .b-share-popup_full .b-share-popup__expander .b-ico_action_rarr,.b-share-popup__expander .b-share-popup__item__text_collapse,.b-share-popup_full .b-share-popup__item__text_expand{display:none}.b-share-popup_to-right .b-share-popup__expander .b-ico_action_rarr,.b-share-popup_full .b-share-popup__item__text_collapse,.b-share-popup_full .b-share-popup__expander .b-ico_action_rarr,.b-share-popup_to-right .b-share-popup_full .b-share-popup__expander .b-ico_action_larr{display:inline}.b-ico_action_rarr,.b-ico_action_larr{width:8px;height:7px;border:0}.b-share-popup__main,.b-share-popup__extra{direction:ltr;vertical-align:bottom;text-align:left}.b-share-popup_down .b-share-popup__main,.b-share-popup_down .b-share-popup__extra{vertical-align:top}.b-share-popup__main{display:-moz-inline-stack;display:inline-block}.b-share-popup__extra{display:none;margin:0 -10px 0 0}.b-share-popup_full .b-share-popup__extra{display:-moz-inline-stack;display:inline-block}.b-share-popup_to-right .b-share-popup__extra{margin:0 0 0 -10px}.b-share-popup__tail{position:absolute;width:21px;height:10px;margin:0 0 0 -11px}.b-share-popup_down .b-share-popup__tail{top:-10px;background:url("//yastatic.net/share/static/b-share-popup_down__tail.gif") 0 0 no-repeat}.b-share-popup_up .b-share-popup__tail{bottom:-10px;background:url("//yastatic.net/share/static/b-share-popup_up__tail.gif") 0 0 no-repeat}.b-share-popup_down .b-share-popup__tail,x:nth-child(1){top:-9px;background-image:url("//yastatic.net/share/static/b-share-popup_down__tail.png")}.b-share-popup_up .b-share-popup__tail,x:nth-child(1){bottom:-9px;background-image:url("//yastatic.net/share/static/b-share-popup_up__tail.png")}@media all and (resolution=0){.b-share-popup_down .b-share-popup__tail,x:nth-child(1),x:-o-prefocus{top:-10px;background-image:url("//yastatic.net/share/static/b-share-popup_down__tail.gif")}.b-share-popup_up .b-share-popup__tail,x:nth-child(1),x:-o-prefocus{bottom:-10px;background-image:url("//yastatic.net/share/static/b-share-popup_up__tail.gif")}}.b-share-popup .b-share-popup_show_form_mail,.b-share-popup .b-share-popup_show_form_html{padding:0!important}.b-share-popup .b-share-popup_show_form_mail .b-share-popup__main,.b-share-popup .b-share-popup_show_form_html .b-share-popup__main,.b-share-popup .b-share-popup_show_form .b-share-popup__main,.b-share-popup .b-share-popup_show_form_mail .b-share-popup__extra,.b-share-popup .b-share-popup_show_form_html .b-share-popup__extra,.b-share-popup .b-share-popup_show_form .b-share-popup__extra{height:15px;padding:0!important;overflow:hidden;visibility:hidden}.b-share-popup_show_form_mail .b-share-popup__expander,.b-share-popup_show_form_html .b-share-popup__expander,.b-share-popup_show_form .b-share-popup__expander,.b-share-popup_show_form_mail .b-share-popup__input_link,.b-share-popup_show_form_html .b-share-popup__input_link,.b-share-popup_show_form .b-share-popup__input_link{display:none}.b-share-popup__form{position:relative;display:none;overflow:hidden;padding:5px 0 0!important;margin:0 0 -15px;white-space:normal}.b-share-popup_show_form_mail .b-share-popup__form_mail,.b-share-popup_show_form_html .b-share-popup__form_html,.b-share-popup_show_form .b-share-popup__form{display:block}.b-share-popup__form__link{padding:5px!important;margin:0 0 5px 10px;text-decoration:underline;cursor:pointer;color:#1A3DC1}.b-share-popup__form__link,.b-share-popup__form__button{font:86%/1.4545em Verdana,sans-serif;float:left;display:inline}.b-share-popup__form__button{margin:5px 0 0 15px}.b-share-popup__form__close{font:86%/1.4545em Verdana,sans-serif;float:right;display:inline;padding:5px!important;margin:0 10px 5px 0;cursor:pointer;color:#999}a.b-share-popup__form__link:hover,a.b-share-popup__form__close:hover{text-decoration:underline;color:red}.b-share-popup_font_fixed .b-share-popup__item{font-size:12.8px}.b-share-popup_font_fixed .b-share-popup__header,.b-share-popup_font_fixed .b-share-popup__input,.b-share-popup_font_fixed .b-share-popup__expander .b-share-popup__item,.b-share-popup_font_fixed .b-share-popup__form__link,.b-share-popup_font_fixed .b-share-popup__form__button,.b-share-popup_font_fixed .b-share-popup__form__close{font-size:11px}.b-share-popup_font_fixed .b-share-popup__yandex{font-size:10px}.b-share-form-button{font:86%/17px Verdana,Arial,sans-serif;display:-moz-inline-box;display:inline-block;position:relative;height:19px;margin:0 3px;padding:0 4px;cursor:default;white-space:nowrap;text-decoration:none!important;color:#000!important;border:none;outline:none;background:url("//yastatic.net/share/static/b-share-form-button.png") 0 -20px repeat-x}.b-share-form-button:link:hover,.b-share-form-button:visited:hover{color:#000!important}.b-share-form-button__before,.b-share-form-button__after{position:absolute;width:3px;height:19px;background:url("//yastatic.net/share/static/b-share-form-button.png")}.b-share-form-button__before{margin-left:-7px}.b-share-form-button__after{margin-left:4px;background-position:-3px 0}.b-share-form-button::-moz-focus-inner{border:none}button.b-share-form-button .b-share-form-button__before,button.b-share-form-button .b-share-form-button__after{margin-top:-1px}@-moz-document url-prefix(){button.b-share-form-button .b-share-form-button__after{margin-top:-2px;margin-left:6px}button.b-share-form-button .b-share-form-button__before{margin-top:-2px;margin-left:-9px}}SPAN.b-share-form-button:hover,.b-share-form-button_state_hover{background-position:0 -60px}SPAN.b-share-form-button:hover .b-share-form-button__before,.b-share-form-button_state_hover .b-share-form-button__before{background-position:0 -40px}SPAN.b-share-form-button:hover .b-share-form-button__after,.b-share-form-button_state_hover .b-share-form-button__after{background-position:-3px -40px}.b-share-form-button_state_pressed,.b-share-form-button_state_pressed .b-share-form-button_share{background-position:0 -100px!important}.b-share-form-button_state_pressed .b-share-form-button__before{background-position:0 -80px!important}.b-share-form-button_state_pressed .b-share-form-button__after{background-position:-3px -80px!important}button.b-share-form-button_state_pressed{overflow:visible}.b-share-form-button_icons{position:relative;padding:0;background-position:0 -20px!important}.b-share-form-button_icons .b-share-form-button__before{left:0;margin-left:-3px;background-position:0 0!important}.b-share-form-button_icons .b-share-form-button__after{z-index:-1;margin-left:0;background-position:-3px 0!important}.b-share-form-button_icons .b-share__handle{padding:2px!important}.b-share-form-button_icons .b-share__handle_more{position:relative;padding-right:6px!important;margin-right:-4px}.b-share-form-button_icons .b-share-icon{opacity:.5;background-image:url("//yastatic.net/share/static/b-share-icon_size_14.png")}.b-share-form-button_icons A.b-share__handle:hover .b-share-icon{opacity:1}.b-share{font:86%/1.4545em Arial,sans-serif;display:-moz-inline-box;display:inline-block;padding:1px 3px 1px 4px!important;vertical-align:middle}.b-share .b-share-form-button{font-size:1em}.b-share__text .b-share-icon{margin:0 5px 0 0;border:none}.b-share__text{margin-right:5px}.b-share__handle{float:left;height:16px;padding:5px 3px 5px 2px!important;cursor:pointer;text-align:left;text-decoration:none!important}.b-share__handle_cursor_default{cursor:default}.b-share__handle .b-share-form-button{margin-top:-2px}.b-share__hr{display:none;float:left;width:1px;height:26px;margin:0 3px 0 2px}a.b-share__handle:hover .b-share__text{text-decoration:underline;color:red}.b-share_bordered{padding:0 2px 0 3px!important;border:1px solid #E4E4E4;-moz-border-radius:5px;-webkit-border-radius:5px;border-radius:5px}.b-share_bordered .b-share__hr{display:inline;background:#E4E4E4}.b-share_link{margin:-8px 0}a.b-share_link{margin:0}.b-share_link .b-share__text{text-decoration:underline;color:#1A3DC1}.b-share-form-button_share{padding-left:26px!important;vertical-align:top}.b-share-form-button_share .b-share-form-button__before{margin-left:-29px}.b-share-form-button_share .b-share-form-button__icon{position:absolute;width:20px;height:17px;margin:1px 0 0 -23px;background:url("//yastatic.net/share/static/b-share-form-button_share__icon.png") 0 0 no-repeat}.b-share-pseudo-link{border-bottom:1px dotted;cursor:pointer;text-decoration:none!important}.b-share_font_fixed{font-size:11px}.b-share__handle_more{font-size:9px;margin-top:-1px;color:#7B7B7B}A.b-share__handle_more:hover{color:#000}.b-share__group{float:left}.b-share-icon{float:left;display:inline;overflow:hidden;width:16px;height:16px;padding:0!important;vertical-align:top;border:0;background:url("//yastatic.net/share/static/b-share-icon.png") 0 99px no-repeat}.b-share-icon_vkontakte,.b-share-icon_custom{background-position:0 0}.b-share-icon_yaru,.b-share-icon_yaru_photo,.b-share-icon_yaru_wishlist{background-position:0 -17px}.b-share-icon_lj{background-position:0 -34px}.b-share-icon_twitter{background-position:0 -51px}.b-share-icon_facebook{background-position:0 -68px}.b-share-icon_moimir{background-position:0 -85px}.b-share-icon_friendfeed{background-position:0 -102px}.b-share-icon_mail{background-position:0 -119px}.b-share-icon_html{background-position:0 -136px}.b-share-icon_postcard{background-position:0 -153px}.b-share-icon_odnoklassniki{background-position:0 -170px}.b-share-icon_blogger{background-position:0 -187px}.b-share-icon_delicious{background-position:0 -221px}.b-share-icon_gbuzz{background-position:0 -238px}.b-share-icon_linkedin{background-position:0 -255px}.b-share-icon_myspace{background-position:0 -272px}.b-share-icon_evernote{background-position:0 -289px}.b-share-icon_digg{background-position:0 -306px}.b-share-icon_juick{background-position:0 -324px}.b-share-icon_moikrug{background-position:0 -341px}.b-share-icon_yazakladki{background-position:0 -358px}.b-share-icon_liveinternet{background-position:0 -375px}.b-share-icon_tutby{background-position:0 -392px}.b-share-icon_diary{background-position:0 -409px}.b-share-icon_gplus{background-position:0 -426px}.b-share-icon_pocket{background-position:0 -443px}.b-share-icon_surfingbird{background-position:0 -460px}.b-share-icon_pinterest{background-position:0 -477px}.b-share-icon_renren{background-position:0 0}.b-share-icon_renren,.b-share-icon_sina_weibo{background:url("//yastatic.net/share/static/b-share-icon__china.png") no-repeat}.b-share-icon_sina_weibo{background-position:-18px 0}.b-share-icon_qzone{background-position:-36px 0}.b-share-icon_qzone,.b-share-icon_tencent_weibo{background:url("//yastatic.net/share/static/b-share-icon__china.png") no-repeat}.b-share-icon_tencent_weibo{background-position:-54px 0}.b-share_theme_dark .b-share-icon{background:url("//yastatic.net/share/static/b-share-icons__theme_dark.png") 99px 0 no-repeat}.b-share_theme_dark .b-share-icon_odnoklassniki{background-position:-4px -3px}.b-share_theme_dark .b-share-icon_vkontakte{background-position:-24px -3px}.b-share_theme_dark .b-share-icon_twitter{background-position:-44px -3px}.b-share_theme_dark .b-share-icon_facebook{background-position:-64px -3px}.b-share_theme_dark .b-share-icon_lj{background-position:-85px -3px}.b-share_theme_dark .b-share-icon_yaru{background-position:-105px -3px}.b-share_theme_dark .b-share-popup .b-share-icon_odnoklassniki,.b-share_theme_dark .b-share-icon_odnoklassniki:hover{background-position:-4px -28px}.b-share_theme_dark .b-share-popup .b-share-icon_vkontakte,.b-share_theme_dark .b-share-icon_vkontakte:hover{background-position:-24px -28px}.b-share_theme_dark .b-share-popup .b-share-icon_twitter,.b-share_theme_dark .b-share-icon_twitter:hover{background-position:-44px -28px}.b-share_theme_dark .b-share-popup .b-share-icon_facebook,.b-share_theme_dark .b-share-icon_facebook:hover{background-position:-64px -28px}.b-share_theme_dark .b-share-popup .b-share-icon_lj,.b-share_theme_dark .b-share-icon_lj:hover{background-position:-85px -28px}.b-share_theme_dark .b-share-popup .b-share-icon_yaru,.b-share_theme_dark .b-share-icon_yaru:hover{background-position:-105px -28px}.b-share_theme_dark .b-share-form-button_share .b-share-form-button__icon{background-image:url("//yastatic.net/share/static/b-share-form-button_share__icon_dark.png")}.b-share_theme_dark .b-share-form-button{color:#fff!important;opacity:.8}.b-share_theme_dark .b-share__handle:hover .b-share-form-button,.b-share_theme_dark .b-share-form-button:hover{opacity:1;cursor:pointer}.b-share_theme_dark .b-share-form-button,.b-share_theme_dark .b-share-form-button__before,.b-share_theme_dark .b-share-form-button__after{background:0 0}.b-share_theme_dark .b-share-popup__i{background-color:#333;border-radius:10px;-webkit-box-shadow:0 2px 9px rgba(255,255,255,.6);-moz-box-shadow:0 2px 9px rgba(255,255,255,.6);box-shadow:0 2px 9px rgba(255,255,255,.6)}.b-share_theme_dark .b-share__text{color:#AAA}.b-share_theme_dark .b-share-popup{color:#AAA;border-radius:10px;background-color:#333;background-color:rgba(50,50,50,.3)}.b-share_theme_dark .b-share-popup__item{background:0 0;color:#ccc}.b-share_theme_dark .b-share-popup .b-share-popup__item__text{color:#ccc}.b-share_theme_counter .b-share{display:inline-block;vertical-align:middle;white-space:nowrap}.b-share-counter{font:14px Arial,sans-serif;line-height:18px;display:none;float:left;margin:3px 6px 3px 3px;color:#fff}.b-share_theme_counter .b-share_type_small .b-share-counter{font-size:11px;line-height:14px;margin:2px 6px 2px 1px}.b-share_theme_counter .b-share-btn__counter .b-share-counter{display:block}.b-share-btn__counter{text-decoration:none}.b-share_theme_counter .b-share-btn__wrap{position:relative;float:left;margin-left:5px}.b-share_theme_counter .b-share_type_small .b-share-btn__wrap{margin-left:4px}.b-share_theme_counter .b-share-btn__wrap:first-child{margin-left:0}.b-share_theme_counter .b-share__link{display:inline-block;cursor:pointer;-webkit-border-radius:3px;border-radius:3px}.b-share_theme_counter .b-share_type_small .b-share__link{-webkit-border-radius:2px;border-radius:2px}.b-share_theme_counter .b-share-icon{display:block;float:left;width:24px;height:24px;background-image:url("//yastatic.net/share/static/b-share_counter_large.png");background-position:-20px 0}.b-share_theme_counter .b-share_type_small .b-share-icon{width:18px;height:18px;background-image:url("//yastatic.net/share/static/b-share_counter_small.png")}.b-share_theme_counter .b-share-icon_facebook{background-position:0 0}.b-share_theme_counter .b-share-btn__facebook{background-color:#3c5a98}.b-share_theme_counter .b-share-btn__facebook:hover{background-color:#30487a}.b-share_theme_counter .b-share-btn__facebook:active{border-top:2px solid #24365a;background-color:#334d81}.b-share_theme_counter .b-share-icon_moimir{background-position:0 -29px}.b-share_theme_counter .b-share-btn__moimir{background-color:#226eb7}.b-share_theme_counter .b-share-btn__moimir:hover{background-color:#1b5892}.b-share_theme_counter .b-share-btn__moimir:active{border-top:2px solid #14426d;background-color:#1d5e9c}.b-share_theme_counter .b-share-icon_vkontakte{background-position:0 -58px}.b-share_theme_counter .b-share-btn__vkontakte{background-color:#48729e}.b-share_theme_counter .b-share-btn__vkontakte:hover{background-color:#3a5b7e}.b-share_theme_counter .b-share-btn__vkontakte:active{border-top:2px solid #2b445e;background-color:#3d6186}.b-share_theme_counter .b-share-icon_twitter{background-position:0 -87px}.b-share_theme_counter .b-share-btn__twitter{background-color:#00aced}.b-share_theme_counter .b-share-btn__twitter:hover{background-color:#008abe}.b-share_theme_counter .b-share-btn__twitter:active{border-top:2px solid #00668d;background-color:#0092ca}.b-share_theme_counter .b-share-icon_odnoklassniki{background-position:0 -116px}.b-share_theme_counter .b-share-btn__odnoklassniki{background-color:#ff9f4d}.b-share_theme_counter .b-share-btn__odnoklassniki:hover{background-color:#cc7f3e}.b-share_theme_counter .b-share-btn__odnoklassniki:active{border-top:2px solid #975e2e;background-color:#d98742}.b-share_theme_counter .b-share-icon_gplus{background-position:0 -145px}.b-share_theme_counter .b-share-btn__gplus{background-color:#c25234}.b-share_theme_counter .b-share-btn__gplus:hover{background-color:#9b422a}.b-share_theme_counter .b-share-btn__gplus:active{border-top:2px solid #73311f;background-color:#a5462c}.b-share_theme_counter .b-share-icon_yaru{background-position:0 -174px}.b-share_theme_counter .b-share-btn__yaru{background-color:#d83933}.b-share_theme_counter .b-share-btn__yaru:hover{background-color:#ad2e29}.b-share_theme_counter .b-share-btn__yaru:active{border-top:2px solid #80221e;background-color:#b8312b}.b-share_theme_counter .b-share-icon_pinterest{background-position:0 -203px}.b-share_theme_counter .b-share-btn__pinterest{background-color:#cd1e27}.b-share_theme_counter .b-share-btn__pinterest:hover{background-color:#a4181f}.b-share_theme_counter .b-share-btn__pinterest:active{border-top:2px solid #7b1217;background-color:#ae1921}.b-share_theme_counter .b-share__link:active{height:22px}.b-share_theme_counter .b-share_type_small .b-share__link:active{height:16px}.b-share_theme_counter .b-share__link:active .b-share-icon,.b-share_theme_counter .b-share__link:active .b-share-counter{position:relative;top:-1px}.b-share_theme_counter .b-share__link::after{position:absolute;top:0;right:0;bottom:0;left:0;content:"";background-image:url(data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==)}.b-share_theme_counter .b-share__handle{height:auto;padding:0!important}</style></head>
+
+<body topmargin="0" leftmargin="0" rightmargin="0" bottommargin="0">
+<a name="top" id="top"></a>
+  <table align="center" border="0" cellpadding="0" cellspacing="0" width="780">
+    <tbody><tr height="20">
+      <td>&nbsp;</td>
+      <td width="100%">&nbsp;</td>
+      <td>&nbsp;</td>
+    </tr>
+    <tr>
+      <td background="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/shad_left.gif" valign="top">
+      <img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/shad_top_left.gif" height="17" border="0" width="11"></td>
+      <td valign="top" width="100%">
+      <table bgcolor="#000000" border="0" cellspacing="1" width="100%">
+        <tbody><tr>
+          <td width="100%">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+              <tbody><tr>
+                <td class="pathway" align="left" valign="center"><img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/arrow.png" hspace="5">
+                <span class="breadcrumbs pathway">
+<a href="http://microsin.net/adminstuff/index.html" class="pathway">Администрирование</a> <img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/arrow.png" alt=""> <a href="http://microsin.net/adminstuff/hardware/index.html" class="pathway">Железо</a> <img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/arrow.png" alt=""> ESP8266: пример тестирования команд AT</span>
+
+                </td>
+                <td class="pathway" align="right" valign="center">
+                Tue, March 01 2016&nbsp;&nbsp;</td>
+              </tr>
+            </tbody></table>
+          </td>
+        </tr>
+        <tr height="80">
+          <td align="left" background="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/logo_bar_logo.jpg" bgcolor="#54647A" width="100%"></td>
+        </tr>
+        <tr>
+          <td background="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/but_bar_back.gif" bgcolor="#AFC6DB" width="100%">
+
+          		<div class="moduletable_topmenu">
+					<table border="0" cellpadding="0" cellspacing="1" width="100%"><tbody><tr><td nowrap="nowrap"><span class="mainlevel">  | </span><a href="http://microsin.net/" class="mainlevel">Главная</a><span class="mainlevel">  | </span><a href="http://microsin.net/mycontacts.html" class="mainlevel">Контакты</a><span class="mainlevel">  | </span><a href="http://microsin.net/adminstuff/index.html" class="mainlevel" id="active_menu">Администрирование</a><span class="mainlevel">  | </span><a href="http://microsin.net/programming/index.html" class="mainlevel">Программирование</a><span class="mainlevel">  | </span><a href="http://microsin.net/Ssyilki/index.html" class="mainlevel">Ссылки</a><span class="mainlevel">  | </span></td></tr></tbody></table>		</div>
+	
+
+                    </td>
+        </tr>
+        <tr>
+          <td bgcolor="#FFFFFF" width="100%">
+          <table style="border-collapse: collapse" id="AutoNumber1" border="0" cellpadding="4" cellspacing="0" width="100%">
+            <tbody><tr>
+              <!-- LEFT Modules -->
+              
+                  <td bgcolor="#F0F0F0" valign="top" width="150">
+                    <div class="modules" style="width:155px;">
+                    		<div class="moduletable">
+					<table border="0">
+<tbody>
+<tr>
+<td><img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/UK-flag-ico.png" alt="UK-flag-ico.png" title="English site version" align="bottom" border="0"></td>
+<td><a href="http://translate.google.ru/translate?hl=ru&amp;sl=ru&amp;tl=en&amp;u=http%3A%2F%2Fmicrosin.net%2F">English Version</a></td>
+</tr>
+<tr>
+<td><img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/GERMAN-flag-ico.png" alt="GERMAN-flag-ico.png" title="Die deutsche Version der Webseite" align="bottom" border="0"></td>
+<td><a href="http://translate.google.ru/translate?hl=ru&amp;sl=ru&amp;tl=de&amp;u=http%3A%2F%2Fmicrosin.net%2F">Die deutsche Version</a></td>
+</tr>
+</tbody>
+</table>
+<a href="http://microsin.net/xmap-1.html">Карта сайта</a>		</div>
+			<div class="moduletable">
+					<h3>Поделиться</h3>
+					<!-- http://api.yandex.ru/share/ -->
+<script type="text/javascript" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/share.js" charset="utf-8"></script> <div class="yashare-auto-init" data-yasharel10n="ru" data-yasharetype="none" data-yasharequickservices="vkontakte,facebook,twitter,moimir,lj,yaru,friendfeed"><span class="b-share"><a rel="nofollow" target="_blank" title="ВКонтакте" class="b-share__handle b-share__link b-share-btn__vkontakte" href="https://share.yandex.net/go.xml?service=vkontakte&amp;url=http%3A%2F%2Fmicrosin.net%2Fadminstuff%2Fhardware%2Fesp8266-at-commands-testing.html&amp;title=ESP8266%3A%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20%7C%20hardware%20%7C%20adminstuff" data-service="vkontakte"><span class="b-share-icon b-share-icon_vkontakte"></span></a><a rel="nofollow" target="_blank" title="Facebook" class="b-share__handle b-share__link b-share-btn__facebook" href="https://share.yandex.net/go.xml?service=facebook&amp;url=http%3A%2F%2Fmicrosin.net%2Fadminstuff%2Fhardware%2Fesp8266-at-commands-testing.html&amp;title=ESP8266%3A%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20%7C%20hardware%20%7C%20adminstuff" data-service="facebook"><span class="b-share-icon b-share-icon_facebook"></span></a><a rel="nofollow" target="_blank" title="Twitter" class="b-share__handle b-share__link b-share-btn__twitter" href="https://share.yandex.net/go.xml?service=twitter&amp;url=http%3A%2F%2Fmicrosin.net%2Fadminstuff%2Fhardware%2Fesp8266-at-commands-testing.html&amp;title=ESP8266%3A%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20%7C%20hardware%20%7C%20adminstuff" data-service="twitter"><span class="b-share-icon b-share-icon_twitter"></span></a><a rel="nofollow" target="_blank" title="Мой Мир" class="b-share__handle b-share__link b-share-btn__moimir" href="https://share.yandex.net/go.xml?service=moimir&amp;url=http%3A%2F%2Fmicrosin.net%2Fadminstuff%2Fhardware%2Fesp8266-at-commands-testing.html&amp;title=ESP8266%3A%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20%7C%20hardware%20%7C%20adminstuff" data-service="moimir"><span class="b-share-icon b-share-icon_moimir"></span></a><a rel="nofollow" target="_blank" title="LiveJournal" class="b-share__handle b-share__link b-share-btn__lj" href="https://share.yandex.net/go.xml?service=lj&amp;url=http%3A%2F%2Fmicrosin.net%2Fadminstuff%2Fhardware%2Fesp8266-at-commands-testing.html&amp;title=ESP8266%3A%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20%7C%20hardware%20%7C%20adminstuff" data-service="lj"><span class="b-share-icon b-share-icon_lj"></span></a></span></div>		</div>
+			<div class="moduletable">
+					<script type="text/javascript">
+		window.addEvent('load', function() {
+		var url = '/component/option,com_acesearch/format,raw/task,complete/';
+		var completer = new Autocompleter.Ajax.Json($('qr-10034'), url, {'postVar': 'q'});
+	});
+		
+	function acesearchsubmit(){
+		var moquery = document.getElementById("qr-10034").value.length;
+		
+		if (moquery >= "3"  ) {
+			return true;
+		} 
+		else {
+			alert("Пожалуйста убедитесь, что Ваш запрос длиннее, чем 3 символов.");
+			return false;
+		}
+	}
+</script>
+
+<form id="acesearchModule-10034" action="/component/option,com_acesearch/view,search/" method="post" name="acesearchModule" onsubmit="return acesearchsubmit();">
+	<div class="search acesearch_bg_module">
+		<input autocomplete="off" name="query" value="..." id="qr-10034" class="acesearch_input_module_modif" onblur="if(this.value=='') this.value='...';" onfocus="if(this.value=='...') this.value='';" style="margin-right:5px;" type="text"><a style="float:left;padding-left:5px;" href="http://microsin.net/component/option,com_acesearch/view,advancedsearch/" title="Расширенный поиск">Расширенный поиск</a><input name="lang" value="ru" type="hidden">	</div>
+	
+	<input name="option" value="com_acesearch" type="hidden">
+	<input name="view" value="search" type="hidden">
+	<input name="task" value="search" type="hidden">
+</form>
+<div class="acesearch_clear_mod_bottom"></div>		</div>
+			<div class="moduletable">
+					<h3>нашли опечатку?</h3>
+					Пожалуйста, сообщите об этом - просто выделите ошибочное слово или фразу и нажмите <b>Shift Enter</b>.		</div>
+	
+<br> <!-- ��� ��� ������� �� ���������� ������ -->
+                    </div>
+                  </td>
+                                <td valign="top">
+              <!-- Top Modules -->
+                                          <div class="nopad"><table class="contentpaneopen">
+<tbody><tr>
+		<td class="contentheading" width="100%">
+					ESP8266: пример тестирования команд AT			</td>
+				
+				<td class="buttonheading" align="right" width="100%">
+		<a href="http://microsin.net/adminstuff/hardware/esp8266-at-commands-testing/Pechat.html" title="Печать" onclick="window.open(this.href,'win2','status=no,toolbar=no,scrollbars=yes,titlebar=no,menubar=no,resizable=yes,width=640,height=480,directories=no,location=no'); return false;" rel="nofollow"><img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/printButton.png" alt="Печать"></a>		</td>
+		
+					</tr>
+</tbody></table>
+
+<table class="contentpaneopen">
+<tbody><tr>
+	<td valign="top">
+		<span class="small">
+			Добавил(а) microsin		</span>
+		&nbsp;&nbsp;
+	</td>
+</tr>
+
+
+
+<tr>
+<td valign="top">
+<p>Экспериментирование проводилась с использованием <strong>Wi-Fi</strong> модуля <strong>ESP-01</strong> и точки доступа DIR-320NRU.&nbsp;</p>
+
+
+
+<p>[<strong>Одиночное подключение (ESP8266 в качестве клиента TCP)</strong>]&nbsp;</p>
+<p><strong>1</strong>. Настройка режима WiFi.&nbsp;Переведите ESP-01 в режим станции.</p>
+<!-- HTML generated using hilite.me -->
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CWMODE=3
+</pre>
+</div>
+<p>В этой команде 3 означает softAP и режим станции.&nbsp;Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK
+</pre>
+</div>
+<p><span style="color: #808080;">Примечание: настроенный режим 
+сохраняется в энергонезависимой памяти. Т. е. если сейчас выключить и 
+снова включить питание модуля ESP, то модуль автоматически перейдет в 
+режим станции. Чтобы узнать текущий режим модуля, введите команду 
+"AT+CWMODE?".</span></p>
+<p><strong>2</strong>. Перезагрузите модуль, чтобы настройка вошла в действие:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+RST
+</pre>
+</div>
+<p>Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK&nbsp;</pre>
+</div>
+<p><strong>3</strong>. Подключение к точке доступа Wi-Fi (например, это может быть домашний роутер наподобие DLink DIR-320):</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CWJAP="<strong>ssid</strong>","<strong>password</strong>"&nbsp;</pre>
+</div>
+<p>В этой команде вводятся идентификатор точки доступа (ssid) и пароль (password). Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK</pre>
+</div>
+<p><span style="color: #808080;">Примечание: SSID и пароль обязательно 
+должны быть заключены в двойные кавычки. SSID и пароль команды также 
+запоминаются в энергонезависимой памяти, и после выключения и включения 
+питания произойдет автоматическое подключение к точке доступа и 
+получение IP-адреса.</span></p>
+<p><strong>4</strong>. Как узнать IP-адрес, который получил модуль от точки доступа.</p>
+<!-- HTML generated using hilite.me -->
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CIFSR
+</pre>
+</div>
+<p>Ответ:</p>
+<!-- HTML generated using hilite.me -->
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">192.168.0.23
+</pre>
+</div>
+<p>Устройство ESP-01 получило IP от роутера. Можно протестировать командой ping:</p>
+<p><a href="http://microsin.net/images/stories/hard/ESP-01-ping.png"><img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/ESP-01-ping.png" alt="ESP 01 ping" height="181" width="335"></a></p>
+<p><strong>5</strong>. С помощью специальной сетевой утилиты на 
+компьютере создайте сервер. Это может быть программа NetAssist.exe [2]. 
+Например, создайте сервер на TCP-порт 8080 с IP адресом 
+192.168.0.53.&nbsp;</p>
+<p><a href="http://microsin.net/images/stories/hard/NetAssist-create-server.PNG"><img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/NetAssist-create-server.PNG" alt="NetAssist create server" height="343" width="290"></a></p>
+<p>После этого дайте команду ESP подключиться к этому серверу в качестве клиента:</p>
+<!-- HTML generated using hilite.me -->
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CIPSTART="TCP","192.168.0.56",8080
+</pre>
+</div>
+<p>В этой команде через запятую протокол, IP сервера, номер порта. Ответ:</p>
+<!-- HTML generated using hilite.me -->
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK
+Linked
+</pre>
+</div>
+<p><strong>6</strong>. Передача данных.</p>
+<!-- HTML generated using hilite.me -->
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CIPSEND=4
+</pre>
+</div>
+<p>В этой команде задана длина передаваемых данных в байтах (в этом 
+примере 4 байта). Модуль ESP выдаст приглашение &gt;. Введите 4 любых 
+символа, Enter нажимать не надо (в этом примере введены буквы QWER).</p>
+<!-- HTML generated using hilite.me -->
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">&gt;QWER
+</pre>
+</div>
+<p>Ответ:</p>
+<!-- HTML generated using hilite.me -->
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">SEND OK
+</pre>
+</div>
+<p><span style="color: #808080;">Примечание: если количество 
+отправляемых байт будет больше, чем заданный размер (в этом примере 4), 
+то после лишние байты переданы не будут. Если нужно снова передать 
+данные, то команду AT+CIPSEND=N нужно ввести повторно.</span></p>
+<p>В окне программы NetAssist.exe будут отображаться принятые данные, 
+которые передал модуль ESP-01 (в виде HEX-кодов ASCII, потому что стоит 
+галочка Receive As HEX).</p>
+<p><a href="http://microsin.net/images/stories/hard/NetAssist-receive-data.PNG"><img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/NetAssist-receive-data.PNG" alt="NetAssist receive data" height="343" width="290"></a></p>
+<p><strong>7</strong>. Прием данных (передача данных от утилиты NetAssist.exe).</p>
+<p>Введите текст для передачи (например "http://microsin.net"), и 
+нажмите кнопку Send (поле ввода и кнопка находятся в нижней части окна 
+программы NetAssist.exe).</p>
+<p><a href="http://microsin.net/images/stories/hard/NetAssist-send-data.PNG"><img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/NetAssist-send-data.PNG" alt="NetAssist send data" height="79" width="290"></a></p>
+<p>Ответ:</p>
+<!-- HTML generated using hilite.me -->
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;"><span style="line-height: 125%;">+IPD,19:http://microsin.net
+OK</span><span style="white-space: normal;">
+</span></pre>
+</div>
+<p>[<strong>Прозрачная передача данных (Transparent transmission)</strong>]</p>
+<p><strong>1</strong>. Установка режима WiFi (режим станции, т. е. сетевого клиента, который может подключиться к точке доступа).</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CWMODE=3
+</pre>
+</div>
+<p>Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK</pre>
+</div>
+<p><strong>2</strong>. Подключение к точке доступа Wi-Fi:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CWJAP="<strong>ssid</strong>","<strong>password</strong>"&nbsp;</pre>
+</div>
+<p>Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK</pre>
+</div>
+<p><strong>3</strong>. Создайте TCP-сервер на компьютере с помощью 
+утилиты NetAssist.exe. В нашем примере это сервер на IP-адресе 
+192.168.0.56, порт 8080. Выдайте для ESP AT-команду для подключения к 
+серверу:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CIPSTART="TCP","192.168.0.56",8080
+</pre>
+</div>
+<p>Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK
+Linked</pre>
+</div>
+<p><strong>4</strong>. Пока что мы повторили все предыдущие шаги из 
+предыдущего раздела "Одиночное подключение (ESP8266 в качестве клиента 
+TCP)". Теперь будут отличия: дадим команду разрешить прозрачный режим, 
+когда все передаваемые и принимаемые данные будут прозрачно появляться 
+на сигналах RS-232 TTL TXD и RXD.</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CIPMODE=1
+</pre>
+</div>
+<p>Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK</pre>
+</div>
+<p><strong>5</strong>. Передача данных. Чтобы начать передачу, введите команду:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CIPSEND
+</pre>
+</div>
+<p>Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">&gt;</pre>
+</div>
+<p>Теперь все данные, которые поступают на ножке RXD модуля ESP-01, 
+будут прозрачно передаваться по радио на точку доступа и далее на 
+TCP-сервер. И наоборот, все данные, которые передаст TCP-сервер, 
+появятся на ножке TXD модуля ESP-01.</p>
+<p><strong>6</strong>. Как выйти из прозрачного режима и остановить 
+передачу. Тут не все однозначно. На некоторых модулях для остановки 
+передачи нужно передать магическую комбинацию символов "+++". Но на моем
+ модуле ESP-01 с прошивкой&nbsp;ai-thinker.com Version:0.9.2.4 это 
+сделать не получилось. Поэтому для выхода из прозрачного режима нужно 
+выполнить аппаратный сброс модуля (подать короткий импульс на сигнал 
+EXT_RSTB, это ножка 6 коннектора модуля ESP-01).</p>
+<p>Как вариант можно остановить сервер TCP. В нашем примере для этого 
+надо нажать кнопку Disconnect в программе NetAssist.exe, которая 
+обеспечивала работу сервера. Модуль ESP-01 выдаст сообщение об 
+отключении от сервера:</p>
+<!-- HTML generated using hilite.me -->
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK
+Unlink
+</pre>
+</div>
+<p>[<strong>ESP8288 в качестве TCP-сервера</strong>]</p>
+<p><strong>1</strong>. Настройка режима Wi-Fi. Переведите ESP-01 в режим станции.</p>
+<!-- HTML generated using hilite.me -->
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CWMODE=3
+</pre>
+</div>
+<p>Ответ:</p>
+<!-- HTML generated using hilite.me -->
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK
+</pre>
+</div>
+<p><strong>2</strong>. Подключение к точке доступа Wi-Fi (например, это может быть домашний роутер наподобие DLink DIR-320):</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CWJAP="<strong>ssid</strong>","<strong>password</strong>"&nbsp;</pre>
+</div>
+<p>В этой команде вводятся идентификатор точки доступа (ssid) и пароль (password). Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK</pre>
+</div>
+<p><strong>3</strong>. Разрешите множественные подключения к модулю ESP-01 (иначе сервер не запустится).</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CIPMUX=1
+</pre>
+</div>
+<p>Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK</pre>
+</div>
+<p><strong>4</strong>. Запуск сервера на модуле ESP-01.</p>
+<!-- HTML generated using hilite.me -->
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CIPSERVER=1
+</pre>
+</div>
+<p>По умолчанию сервер заработает на TCP-порту 333. Ответ модуля ESP-01, сигнализирующий о нормальном запуске сервера:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK</pre>
+</div>
+<p><strong>5</strong>. Теперь можно протестировать работу TCP-сервера. В
+ качестве сетевого клиента можно использовать команду telnet, указав в 
+командной строке IP-адрес и порт сервера:</p>
+<!-- HTML generated using hilite.me -->
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">telnet 192.168.0.23 333
+</pre>
+</div>
+<p>Модуль ESP-01 просигнализирует о подключении к серверу сообщением:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">Link</pre>
+</div>
+<p><span style="color: #808080;">Примечание: ESP8266EX работает как 
+сервер с использованием механизма таймаута. Это означает, что когда 
+соединение установлено, и за определенный период времени (таймаут) не 
+передавалось никаких данных через это соединение, то сервер ESP-01 
+отключит его, и выдаст при этом сообщение:</span></p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">Unlink</pre>
+</div>
+<p><span style="color: #808080;">Поэтому, если Вы хотите, чтобы 
+соединение сохранялось, то обеспечьте повторение передач пакетов от 
+клиента как минимум каждые 5 секунд.</span></p>
+<p><strong>6</strong>. Прием данных TCP-сервером. В качестве теста можно
+ передавать данные от команды telnet, если нажимать клавиши в её окне. 
+Вот ответ сервера ESP-01, сигнализирующий поступление данных (в окне 
+telnet были последовательно нажаты друг за другом клавиши q, w, e, r, t,
+ y).</p>
+<!-- HTML generated using hilite.me -->
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">+IPD,0,1:q
+OK</pre>
+<pre style="margin: 0; line-height: 125%;">&nbsp;</pre>
+<pre style="margin: 0; line-height: 125%;">+IPD,0,1:w
+OK</pre>
+<pre style="margin: 0; line-height: 125%;">&nbsp;</pre>
+<pre style="margin: 0; line-height: 125%;">+IPD,0,1:e
+OK
+</pre>
+<pre style="margin: 0; line-height: 125%;">&nbsp;</pre>
+<pre style="margin: 0; line-height: 125%;">+IPD,0,1:r
+OK
+</pre>
+<pre style="margin: 0; line-height: 125%;">&nbsp;</pre>
+<pre style="margin: 0; line-height: 125%;">+IPD,0,1:t
+OK
+</pre>
+<pre style="margin: 0; line-height: 125%;">&nbsp;</pre>
+<pre style="margin: 0; line-height: 125%;">+IPD,0,1:y
+OK
+</pre>
+</div>
+<p><span style="color: #808080;">Примечание: после +IPD через запятую 
+идет 0, означающий номер сетевого соединения, дальше через запятую идет 
+количество принятых байт 1, и дальше через двоеточие идет принятый байт в
+ символьном виде (т. е. его код отображается как символ ASCII).</span></p>
+<p><strong>7</strong>. Передача данных TCP-сервером.</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CIPSEND=4
+</pre>
+</div>
+<p>В этой команде задана длина передаваемых данных в байтах (в этом 
+примере 4 байта). Модуль ESP-01 выдаст приглашение &gt;. Введите 4 любых
+ символа, Enter нажимать не надо (в этом примере введены буквы QWER).</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">&gt;QWER
+</pre>
+</div>
+<p>Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">SEND OK</pre>
+</div>
+<p>[<strong>Передача пакетов UDP</strong>]</p>
+<p><strong>1</strong>. Настройка режима Wi-Fi. Переведите ESP-01 в режим станции.</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CWMODE=3
+</pre>
+</div>
+<p>Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK
+</pre>
+</div>
+<p><strong>2</strong>. Подключение к точке доступа Wi-Fi (например, это может быть домашний роутер наподобие DLink DIR-320):</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CWJAP="<strong>ssid</strong>","<strong>password</strong>"&nbsp;</pre>
+</div>
+<p>В этой команде вводятся идентификатор точки доступа (ssid) и пароль (password). Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK</pre>
+</div>
+<p><strong>3</strong>.&nbsp;Узнайте IP-адрес, который получил модуль от точки доступа.</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CIFSR
+</pre>
+</div>
+<p>Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">192.168.0.23</pre>
+</div>
+<p><strong>4</strong>. В нашем сценарии компьютер PC и модуль ESP-01 
+подключен к одному и тому же роутеру DIR-320. Запустите утилиту 
+NetAssist.exe, в выпадающем списке Settings выберите UDP и нажмите 
+кнопку Connect. В поле Local Host IP будет отображен IP компьютера, куда
+ будет подключаться модуль ESP-01.</p>
+<p><strong>5</strong>. Разрешите множественные соединения.</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CIPMUX=1
+</pre>
+</div>
+<p>Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK</pre>
+</div>
+<p><strong>6</strong>. Создайте соединение UDP. Для соединения нужно 
+указать идентификатор, в нашем примере идентификатор id соединения будет
+ 4. Идентификатор потом понадобится для работы с соединением - для 
+передачи данных и для закрытия соединения.</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CIPSTART=4,"UDP","192.168.0.56",8080,1112,0
+</pre>
+</div>
+<p>Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK</pre>
+</div>
+<p>В этом примере "192.168.0.56",8080 это IP и порт удаленной точки 
+подключения (программа NetAssist.exe на компьютере), 1112 это номер 
+локального порта модуля ESP-01 (если это число опустить, то номер порта 
+ESP-01 сам выберет случайным образом). Завершающий 0 означает, что 
+параметры удаленного участника обмена не поменяются. Для нашего примера и
+ случая, если другой компьютер также создаст соединение UDP и отправит 
+данные к ESP-01 на порт 1112, то ESP-01 сможет принять эти данные, но 
+когда ESP-01 отправит данные командой&nbsp;"AT+CIPSEND=4,n", то он 
+отправит их на первый компьютер. Если этот последний параметр будет не 
+0, то данные будут посланы новому компьютеру.</p>
+<p><strong>7</strong>. Отправка данных от ESP-01 к компьютеру.</p>
+<!-- HTML generated using hilite.me -->
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CIPSEND=4,5
+</pre>
+</div>
+<p>В этом примере указано передать 5 байт на соединение с 
+идентификатором 4. В ответ на эту команду модуль выдаст приглашение 
+&gt;. Введите 5 любых символов, Enter нажимать не надо (в этом примере 
+введены буквы asdfg).</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">&gt;asdfg
+</pre>
+</div>
+<p>Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">SEND OK</pre>
+</div>
+<p>В окне NetAssist.exe принятые данные введенных символов asdfg отобразятся как HEX-коды (61 73 64 66 67).</p>
+<p><strong>8</strong>. Прием данных модулем ESP-01 от компьютера (передача данных от утилиты NetAssist.exe).</p>
+<p>Введите текст для передачи (например "http://microsin.net"), и 
+нажмите кнопку Send (поле ввода и кнопка находятся в нижней части окна 
+программы NetAssist.exe).</p>
+<p>Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;"><span>+IPD,4,19:http://microsin.net
+OK</span></pre>
+</div>
+<p>Обратите внимание, что после +IPD теперь стоит не только количество принятых байт 19, но и еще идентификатор соединения 4.</p>
+<p><a href="http://microsin.net/images/stories/hard/NetAssist-receive-send-UDP.png"><img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/NetAssist-receive-send-UDP.png" alt="NetAssist receive send UDP" height="403" width="395"></a></p>
+<p><strong>9</strong>. Удаление соединения 4.</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">AT+CIPCLOSE=4
+</pre>
+</div>
+<p>Ответ:</p>
+<div style="background: #ffffff; overflow: auto; width: auto; border: solid gray; border-width: .1em .1em .1em .8em; padding: .2em .6em;">
+<pre style="margin: 0; line-height: 125%;">OK
+Unlink</pre>
+</div>
+<p>[<strong>Ссылки</strong>]</p>
+<p><strong>1</strong>. <span style="color: #333399;">at_example_0020000903 site:github.com</span>.<br><strong>2</strong>. <span style="color: #333399;">NetAssist.exe site:securitycameranet.com</span>.</p></td>
+</tr>
+
+</tbody></table>
+<span class="article_separator">&nbsp;</span>
+<script type="text/javascript">
+<!--
+var jcomments=new JComments(1866, 'com_content','/index.php?option=com_jcomments&amp;tmpl=component');
+jcomments.setList('comments-list');
+//-->
+</script>
+<div id="jc">
+<div id="comments"><h4>Комментарии<a class="rss" href="http://microsin.net/component/option,com_jcomments/format,raw/object_group,com_content/object_id,1866/task,rss/" title="RSS лента комментариев этой записи" target="_blank">&nbsp;</a><a class="refresh" href="#" title="Обновить список комментариев" onclick="jcomments.showPage(1866,'com_content',0);return false;">&nbsp;</a></h4>
+<div id="comments-list" class="comments-list">
+        <div class="even" id="comment-item-3203"><div class="rbox"><div class="rbox_tr"><div class="rbox_tl"><div class="rbox_t">&nbsp;</div></div></div><div class="rbox_m">
+<div class="comment-box usertype-guest">
+<span class="comments-vote">
+	<span id="comment-vote-holder-3203">
+<a href="#" class="vote-good" title="Хороший комментарий!" onclick="jcomments.voteComment(3203, 1);return false;"></a><a href="#" class="vote-poor" title="Плохой комментарий!" onclick="jcomments.voteComment(3203, -1);return false;"></a>
+<span class="vote-none">0</span>
+	</span>
+</span>
+<a class="comment-anchor" href="http://microsin.net/adminstuff/hardware/esp8266-at-commands-testing.html#comment-3203" id="comment-3203">#1</a>
+<span class="comment-author">Конст</span>
+<span class="comment-date">01.02.2016 18:25</span>
+<div class="comment-body" id="comment-body-3203">Хорошие примеры, все просто и доступно</div>
+<span class="comments-buttons">
+<a href="#" onclick="jcomments.quoteComment(3203); return false;">Цитировать</a>
+</span>
+</div><div class="clear"></div>
+</div><div class="rbox_br"><div class="rbox_bl"><div class="rbox_b">&nbsp;</div></div></div></div>
+</div>
+</div>
+<div id="comments-list-footer"><a class="refresh" href="#" title="Обновить список комментариев" onclick="jcomments.showPage(1866,'com_content',0);return false;">Обновить список комментариев</a><br><a class="rss" href="http://microsin.net/component/option,com_jcomments/format,raw/object_group,com_content/object_id,1866/task,rss/" target="_blank">RSS лента комментариев этой записи</a></div>
+</div>
+<h4>Добавить комментарий</h4>
+<a id="addcomments" href="#addcomments"></a>
+<form id="comments-form" name="comments-form" action="javascript:void(null);">
+<p>
+	<input id="comments-form-name" name="name" maxlength="20" size="22" tabindex="1" type="text">
+	<label for="comments-form-name">Имя (обязательное)</label>
+</p>
+<p>
+	<input id="comments-form-email" name="email" size="22" tabindex="2" type="text">
+	<label for="comments-form-email">E-Mail (обязательное)</label>
+</p>
+<p>
+	<input id="comments-form-homepage" name="homepage" size="22" tabindex="3" type="text">
+	<label for="comments-form-homepage">Сайт</label>
+</p>
+<p>
+	<div class="smiles"><img class="smile" alt=":D" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/laugh.gif"><img class="smile" alt=":lol:" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/lol.gif"><img class="smile" alt=":-)" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/smile.gif"><img class="smile" alt=";-)" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/wink.gif"><img class="smile" alt="8)" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/cool.gif"><img class="smile" alt=":-|" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/normal.gif"><img class="smile" alt=":-*" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/whistling.gif"><img class="smile" alt=":oops:" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/redface.gif"><img class="smile" alt=":sad:" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/sad.gif"><img class="smile" alt=":cry:" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/cry.gif"><img class="smile" alt=":o" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/surprised.gif"><img class="smile" alt=":-?" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/confused.gif"><img class="smile" alt=":-x" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/sick.gif"><img class="smile" alt=":eek:" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/shocked.gif"><img class="smile" alt=":zzz" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/sleeping.gif"><img class="smile" alt=":P" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/tongue.gif"><img class="smile" alt=":roll:" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/rolleyes.gif"><img class="smile" alt=":sigh:" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/unsure.gif"></div><textarea id="comments-form-comment" name="comment" cols="65" rows="8" tabindex="5"></textarea><div class="grippie"><span class="counter">Осталось: <span>1000</span>  символов</span></div>
+</p>
+<p>
+	<input class="checkbox" id="comments-form-subscribe" name="subscribe" value="1" tabindex="5" type="checkbox">
+	<label for="comments-form-subscribe">Подписаться на уведомления о новых комментариях</label><br>
+</p>
+<p>
+	<img class="captcha" onclick="jcomments.clear('captcha');" id="comments-form-captcha-image" name="captcha-image" src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/index.jpg" alt="Защитный код" height="60" width="121"><br>
+	<span class="captcha" onclick="jcomments.clear('captcha');">Обновить</span><br>
+	<input class="captcha" id="comments-form-captcha" name="captcha-refid" size="5" tabindex="6" type="text"><br>
+</p>
+<div id="comments-form-buttons">
+	<div class="btn" id="comments-form-send"><div><a href="#" tabindex="7" onclick="jcomments.saveComment();return false;" title="Отправить (Ctrl+Enter)">Отправить</a></div></div>
+	<div class="btn" id="comments-form-cancel" style="display:none;"><div><a href="#" tabindex="8" onclick="return false;" title="Отменить">Отменить</a></div></div>
+	<div style="clear:both;"></div>
+</div>
+	<input name="object_id" value="1866" type="hidden">
+	<input name="object_group" value="com_content" type="hidden">
+</form>
+<script type="text/javascript">
+<!--
+function JCommentsInitializeForm()
+{
+	var jcEditor = new JCommentsEditor('comments-form-comment', true);
+	jcEditor.initSmiles('http://microsin.net/components/com_jcomments/images/smiles');
+	jcEditor.addSmile(':D','laugh.gif');
+	jcEditor.addSmile(':lol:','lol.gif');
+	jcEditor.addSmile(':-)','smile.gif');
+	jcEditor.addSmile(';-)','wink.gif');
+	jcEditor.addSmile('8)','cool.gif');
+	jcEditor.addSmile(':-|','normal.gif');
+	jcEditor.addSmile(':-*','whistling.gif');
+	jcEditor.addSmile(':oops:','redface.gif');
+	jcEditor.addSmile(':sad:','sad.gif');
+	jcEditor.addSmile(':cry:','cry.gif');
+	jcEditor.addSmile(':o','surprised.gif');
+	jcEditor.addSmile(':-?','confused.gif');
+	jcEditor.addSmile(':-x','sick.gif');
+	jcEditor.addSmile(':eek:','shocked.gif');
+	jcEditor.addSmile(':zzz','sleeping.gif');
+	jcEditor.addSmile(':P','tongue.gif');
+	jcEditor.addSmile(':roll:','rolleyes.gif');
+	jcEditor.addSmile(':sigh:','unsure.gif');
+	jcEditor.addCounter(1000, 'Осталось:', ' символов', 'counter');
+	jcomments.setForm(new JCommentsForm('comments-form', jcEditor));
+}
+
+if (window.addEventListener) {window.addEventListener('load',JCommentsInitializeForm,false);}
+else if (document.addEventListener){document.addEventListener('load',JCommentsInitializeForm,false);}
+else if (window.attachEvent){window.attachEvent('onload',JCommentsInitializeForm);}
+else {if (typeof window.onload=='function'){var oldload=window.onload;window.onload=function(){oldload();JCommentsInitializeForm();}} else window.onload=JCommentsInitializeForm;} 
+//-->
+</script>
+<div id="comments-footer" align="center"><a href="http://www.joomlatune.ru/" title="JComments" target="_blank">JComments</a></div>
+<script type="text/javascript">
+<!--
+jcomments.setAntiCache(1,0,0);
+//-->
+</script> 
+</div></div>
+              </td>
+              <!-- RIGHT Modules -->
+              
+            </tr>
+          </tbody></table>
+          </td>
+        </tr>
+      </tbody></table>
+      </td>
+      <td background="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/shad_right.gif" valign="top">
+      <img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/shad_top_right.gif" height="17" border="0" width="11"></td>
+    </tr>
+    <tr>
+      <td><img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/shad_bottom_left.gif" height="19" border="0" width="11"></td>
+      <td background="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/shad_bottom.gif" width="100%">
+      <table border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tbody><tr>
+          <td>
+          <img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/shad_bottom_inner_left.gif" height="19" border="0" width="19"></td>
+          <td align="left"><a href="#top"><img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/top_of_page.gif" alt="Top of Page" border="0" vspace="5"></a></td>
+          <td align="right" width="100%"><!--���������������� ��� ���������� ������ "File does not exist:
+           /home/microsig/public_html/images/poweredbyLong.gif"<img src="/images/poweredbyLong.gif" width="169" height="8" vspace="5" border="0" alt="Powered by Mambo Open Source">--></td>
+          <td>
+          <img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/shad_bottom_inner_right.gif" height="19" border="0" width="19"></td>
+        </tr>
+      </tbody></table>
+      </td>
+      <td>
+      <img src="ESP8266%20%20%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%20AT%20_%20hardware%20_%20adminstuff_files/shad_bottom_right.gif" height="19" border="0" width="11"></td>
+    </tr>
+  </tbody></table>
+  <table align="center" border="0" cellpadding="3" cellspacing="0" width="780">
+    <tbody><tr>
+      <td align="center">
+      
+                      </td>
+    </tr>
+  </tbody></table>
+
+
+
+<div style="position: absolute; display: none; width: 375px; height: 380px; top: 50px; left: 50px; z-index: 999;" id="MistWindow"></div><ul style="z-index: 1000; visibility: hidden; opacity: 0;" class="autocompleter-choices"></ul></body></html>

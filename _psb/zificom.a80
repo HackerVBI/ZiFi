@@ -1,0 +1,169 @@
+	device zxspectrum128
+
+	org #c000
+
+	include "sockets.mac"
+
+
+start_
+	jp init
+	jp get
+
+
+
+init
+        ;init uart
+        ld hl,2 ;BaudRate = 115200 / divfq;
+        call uart.SetBaud
+
+	;init uart
+	ld a,uart.WLSB1+uart.WLSB0 ;8 bit word, no parity
+	call uart.SetLineControl
+
+	ret
+
+; BUFFER equ 0
+; BUFFER_SIZE equ 1
+
+GET_HDR dw 0
+GET_HDR_LEN dw 0
+GET_PAGE db 0
+host_addr_len dw 0
+host_addr dw 0
+
+;in:
+;a=page
+;hl=get hdr
+;out:
+;a=0 - ok
+;hl=len_l
+;bc=len_h
+get
+	ld (GET_HDR),hl
+	ld (GET_PAGE),a
+;get host name
+g1	ld a,(hl)
+	or a:jp z,get_err
+	cp 'H':jr z,get_h1
+	inc hl:jr g1
+
+get_h1  inc hl
+	ld a,(hl):cp 'o':jr nz,g1:inc hl
+	ld a,(hl):cp 's':jr nz,g1:inc hl
+	ld a,(hl):cp 't':jr nz,g1:inc hl
+	ld a,(hl):cp ':':jr nz,g1:inc hl
+	ld a,(hl):cp ' ':jr nz,g1:inc hl
+
+	ld (host_addr),hl
+	ld bc,0
+gh1 	ld a,(hl):cp 13:jr z,ghe
+	cp ":":jr z,ghe
+	cp "/":jr z,ghe ;?
+	inc hl,bc:jr gh1
+
+ghe 	ld (host_addr_len),bc
+
+;get HDR len
+g2	ld a,(hl)
+	or a:jr z,g3
+	inc hl:jr g2
+
+g3	ld de,(GET_HDR):or a:sbc hl,de:ld (GET_HDR_LEN),hl
+
+	;gethostbyname
+	ld hl,(host_addr),bc,(host_addr_len)
+	call sockets.gethostbyname
+	or a:jp nz,get_err
+	ld (server_addr),hl,(server_addr+2),bc
+
+	;create socket
+	socket AF_INET,SOCK_STREAM,0
+	cp INVALID_SOCKET:jp z,get_err
+	ld (fd),a
+
+	;bind my socket
+	bind fd,my_addr
+	or a:jp nz,get_err
+
+	;connect to host
+	connect fd,server_addr
+	or a:jr nz,get_err
+
+	;send HTTP request
+	send fd,(GET_HDR),(GET_HDR_LEN)
+	or a:jr nz,get_err
+
+	ld ix,0 ;full pages got
+	ld hl,#4000
+get_loop
+	ld a,(GET_PAGE)
+	ld bc,#11af:out (c),a
+	ld de,#8000:ex de,hl:or a:sbc hl,de:ex de,hl ;de=len,hl=start
+	;recv data
+; 	recv fd,BUFFER,BUFFER_SIZE
+	push hl
+	ld b,d,c,e
+	ld a,(fd)
+	call sockets.recv
+	pop hl
+	or a:jr nz,get_end
+;	ld a,b:or c:jr z,get_end
+
+	add hl,bc
+	bit 7,h
+	jr z,get_loop
+
+	ld hl,GET_PAGE:inc (hl)
+	ld hl,#4000
+	inc ixl
+        jr get_loop
+
+get_end res 6,h:res 7,h
+	ld de,0,b,0,c,ixl
+	srl c:rr d:rr e
+	srl c:rr d:rr e
+	add hl,de ;bc:hl=len
+
+
+get_e	ld a,(fd):cp #ff:jr z,noclose
+	push hl,bc
+	;close socket
+	close fd
+	pop bc,hl
+noclose ld a,#ff,(fd),a
+	xor a
+	ret
+
+
+get_err call get_e
+	inc a
+	ret
+
+
+;-----------------------------------------------------------
+
+
+
+
+
+fd	db #ff ;socket fd
+my_addr	db 0,0,0,0:dw 0 ;my ip+port
+
+
+
+
+server_addr db 93,158,134,3:dw 80
+
+;code
+	include "uart.a80"
+	include "sockets.a80"
+
+
+end_
+
+
+	;save snap
+	SAVEBIN "_spg/zificom.bin",start_, end_-start_
+
+
+

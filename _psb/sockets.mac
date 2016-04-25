@@ -1,0 +1,59 @@
+
+; socket types
+
+SOCK_STREAM     equ 1	; stream socket (TCP)
+SOCK_DGRAM      equ 2	; datagram socket (UDP)
+
+; address families
+
+AF_INET         equ 2	; internetwork: UDP, TCP, etc.
+
+; constants
+
+INVALID_SOCKET	equ #ff	;-1
+
+
+	macro socket _xaf,_xst,_xproto
+	ld hl,_xaf+256*_xst
+	ld c,_xproto
+	call sockets.socket
+	endm
+
+	macro bind _xfd,_xaddr
+	ld hl,_xaddr
+	ld a,(_xfd)
+	call sockets.bind
+	endm
+
+	macro connect _xfd,_xaddr
+	ld hl,_xaddr
+	ld a,(_xfd)
+	call sockets.connect
+	endm
+
+	macro close _xfd
+	ld a,(_xfd)
+	call sockets.close
+	endm
+
+
+	
+	
+	macro send _xfd,_xaddr,_xlen
+	ld hl,_xaddr,bc,_xlen
+	ld a,(_xfd)
+	call sockets.send
+	endm
+
+	macro recv _xfd,_xaddr,_xlen
+	ld hl,_xaddr,bc,_xlen
+	ld a,(_xfd)
+	call sockets.recv
+	endm
+
+	macro gethostbyname _xname,_xlen
+	ld hl,_xname,bc,_xlen
+	call sockets.gethostbyname
+	endm
+
+

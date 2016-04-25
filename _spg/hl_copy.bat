@@ -1,0 +1,1 @@
+copy /b hl_download.tga.pix+hl_gfx.tga.pix+hl_mus.tga.pix+hl_press.tga.pix hl.pix

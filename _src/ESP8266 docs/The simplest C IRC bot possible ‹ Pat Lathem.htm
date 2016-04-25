@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<!--[if lt IE 7 ]> <html class="ie6 ie" lang="en-US"> <![endif]-->
+<!--[if IE 7 ]>    <html class="ie7 ie" lang="en-US"> <![endif]-->
+<!--[if IE 8 ]>    <html class="ie8 ie" lang="en-US"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!-->
+<html class="js" lang="en-US"><!--<![endif]--><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta charset="UTF-8">
+<title>
+The simplest C IRC bot possible ‹ Pat Lathem </title>
+<script type="text/javascript">
+//<![CDATA[
+try{if (!window.CloudFlare) {var CloudFlare=[{verbose:0,p:0,byc:0,owlid:"cf",bag2:1,mirage2:0,oracle:0,paths:{cloudflare:"/cdn-cgi/nexp/dok3v=1613a3a185/"},atok:"148d1d4e43e993ae4c1ad20028ce1773",petok:"b0378cc6cc5d2879ae5a7024f1424c3445f5b921-1456863001-1800",zone:"patlathem.com",rocket:"a",apps:{},sha2test:0}];document.write('<script type="text/javascript" src="//ajax.cloudflare.com/cdn-cgi/nexp/dok3v=fb690a32f5/cloudflare.min.js"><'+'\/script>');}}catch(e){};
+//]]>
+</script><script type="text/javascript" src="The%20simplest%20C%20IRC%20bot%20possible%20%E2%80%B9%20Pat%20Lathem_files/cloudflare.js"></script><style type="text/css">.cf-hidden { display: none; } .cf-invisible { visibility: hidden; }</style><script data-module="cloudflare/rocket" id="cfjs_block_11715fe2783" onload="CloudFlare.__cfjs_block_11715fe2783_load()" onerror="CloudFlare.__cfjs_block_11715fe2783_error()" onreadystatechange="CloudFlare.__cfjs_block_11715fe2783_readystatechange()" type="text/javascript" src="The%20simplest%20C%20IRC%20bot%20possible%20%E2%80%B9%20Pat%20Lathem_files/rocket.js"></script>
+<link rel="stylesheet" href="The%20simplest%20C%20IRC%20bot%20possible%20%E2%80%B9%20Pat%20Lathem_files/style.css" type="text/css" media="screen">
+<link rel="pingback" href="http://www.patlathem.com/xmlrpc.php">
+<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
+<link rel="alternate" type="application/rss+xml" title="Pat Lathem » Feed" href="http://www.patlathem.com/feed/">
+<link rel="alternate" type="application/rss+xml" title="Pat Lathem » Comments Feed" href="http://www.patlathem.com/comments/feed/">
+<link rel="stylesheet" id="opensans-css" href="The%20simplest%20C%20IRC%20bot%20possible%20%E2%80%B9%20Pat%20Lathem_files/css.css" type="text/css" media="all">
+<script data-rocketoptimized="true" type="text/rocketscript" data-rocketsrc="http://www.patlathem.com/wp-includes/js/jquery/jquery.js?ver=1.11.1"></script>
+<script data-rocketoptimized="true" type="text/rocketscript" data-rocketsrc="http://www.patlathem.com/wp-includes/js/jquery/jquery-migrate.min.js?ver=1.2.1"></script>
+<script data-rocketoptimized="true" type="text/rocketscript" data-rocketsrc="http://www.patlathem.com/wp-content/themes/pinzolo/js/superfish.js?ver=4.1.10"></script>
+<script data-rocketoptimized="true" type="text/rocketscript" data-rocketsrc="http://www.patlathem.com/wp-content/themes/pinzolo/js/jquery.formalize.min.js?ver=4.1.10"></script>
+<script data-rocketoptimized="true" type="text/rocketscript" data-rocketsrc="http://www.patlathem.com/wp-content/themes/pinzolo/js/tinynav.js?ver=4.1.10"></script>
+<script data-rocketoptimized="true" type="text/rocketscript" data-rocketsrc="http://www.patlathem.com/wp-content/themes/pinzolo/js/pinzolo.js?ver=4.1.10"></script>
+<link rel="EditURI" type="application/rsd+xml" title="RSD" href="http://www.patlathem.com/xmlrpc.php?rsd">
+<link rel="wlwmanifest" type="application/wlwmanifest+xml" href="http://www.patlathem.com/wp-includes/wlwmanifest.xml">
+<link rel="next" title="Identifying Courier IMAP I/O abusers" href="http://www.patlathem.com/identifying-courier-imap-io-abusers/">
+<meta name="generator" content="WordPress 4.1.10">
+<link rel="canonical" href="http://www.patlathem.com/hello-irc-world/">
+<link rel="shortlink" href="http://www.patlathem.com/?p=1">
+<style type="text/css" id="custom-colour-css">.dets ul a,.dets p a,.content a,footer a:hover{color:#56B33D;}#logoContainer h1,#logoContainer h1 a,#logoContainer h1 a:hover{color:#blank;}#logoContainer p{color:#blank;}article .dets h2 a,h1,h2,h3{color:#000000;}</style>
+<style type="text/css" id="custom-background-css">body.custom-background{background-color:#b5b5b5;}</style>
+</head>
+<body class="single single-post postid-1 single-format-standard custom-background">
+<div id="wrapper_border" class="center">
+ 
+<div id="logoContainer">
+<h1><a href="http://www.patlathem.com/"> </a></h1>
+<p></p>
+</div>
+<div id="wrapper_bg" class="center">
+<div id="navwrap">
+<div id="navwrap2">
+<nav>
+<div class="menu"><ul class="sf-js-enabled sf-shadow"><li><a href="http://www.patlathem.com/">Home</a></li><li class="page_item page-item-2"><a href="http://www.patlathem.com/about/">About</a></li></ul></div>
+</nav>
+</div>
+</div>
+<div id="main" class="center">
+<div id="bcont">
+<div id="blog_head">
+<div id="searchbox" class="menu">
+<form action="http://www.patlathem.com/" method="get">
+<input id="Searchform" class="textfield wpcf7-text" name="s" size="24" value="search" type="text">
+</form>
+</div>
+<select name="cat" id="cat" class="postform">
+<option selected="selected" value="-1">Select category</option>
+<option class="level-0" value="1">Uncategorized</option>
+<option class="level-0" value="3">c programming</option>
+<option class="level-0" value="4">sockets</option>
+<option class="level-0" value="5">python</option>
+<option class="level-0" value="6">imap</option>
+<option class="level-0" value="8">nginx</option>
+<option class="level-0" value="9">php</option>
+<option class="level-0" value="10">plesk</option>
+<option class="level-0" value="11">zabbix</option>
+<option class="level-0" value="12">monitoring</option>
+<option class="level-0" value="13">monit</option>
+<option class="level-0" value="15">wordpress</option>
+</select>
+<script data-rocketoptimized="true" type="text/rocketscript">
+		var dropdown = document.getElementById("cat");
+		function onCatChange() {
+			if ( dropdown.options[dropdown.selectedIndex].value > 0 ) {
+				location.href = "http://www.patlathem.com/?cat="+dropdown.options[dropdown.selectedIndex].value;
+			}
+		}
+		dropdown.onchange = onCatChange;
+	</script>
+</div>
+<article id="post-1" class="post-1 post type-post status-publish format-standard hentry category-c-programming category-sockets">
+<div class="dets_wrap">
+<div class="dets">
+<h2><a href="http://www.patlathem.com/hello-irc-world/">The simplest C IRC bot possible</a></h2>
+<ul>
+<li><span>By</span> pat </li>
+<li><span>In</span> <a href="http://www.patlathem.com/category/c-programming/" rel="category tag">c programming</a> <a href="http://www.patlathem.com/category/sockets/" rel="category tag">sockets</a></li>
+<li><span>With</span> <a href="http://www.patlathem.com/hello-irc-world/#comments"> No Comments </a></li>
+<li><span>On</span> 10 Feb | '2011 </li>
+<li class="perm"><a href="http://www.patlathem.com/hello-irc-world/"><img src="The%20simplest%20C%20IRC%20bot%20possible%20%E2%80%B9%20Pat%20Lathem_files/permalink.svg" alt="permalink"></a></li>
+</ul>
+</div>
+</div>
+<div class="content_wrap">
+<div class="content">
+<p>All of my programming classes in college were in C, but unfortunately
+ I forgot most of it. I’ve been trying to re-learn, and I started with 
+the simplest IRC bot possible. &nbsp;This code simply connects to an IRC
+ server by its IP address on port 6667, logs in, and responds to PING 
+commands.</p>
+<p>I start by creating a socket.</p>
+<pre class="brush:c; first-line:51">if ( (*sockfd = socket(AF_INET, SOCK_STREAM, 0)) &lt; 0) {</pre>
+<p>Inet_pton is used to convert a IP address string into a number. 
+Inet_aton would also work but there is no reason to use it as pton also 
+supports IPV6 addresses.</p>
+<pre class="brush:c; first-line:55">if (inet_pton(AF_INET, server, &amp;servaddr.sin_addr) &lt;= 0) {</pre>
+<p>Connect is called to well, connect to the server.</p>
+<pre class="brush:c; first-line:59">if (connect(*sockfd, (struct sockaddr*)&amp;servaddr, sizeof(servaddr)) &lt; 0 )</pre>
+<p>Once the bot is connected to the IRC server, you simply need to provide your user and nickname. See <a href="http://www.irchelp.org/irchelp/rfc/chapter4.html#c4_1">RFC 1459</a> for more details.</p>
+<pre class="brush:c; first-line:24">    my_send(sockfd, "NICK clark\r\n", debug);
+    my_send(sockfd, "USER clark 8 * : Clark Clarkerson\r\n", debug);</pre>
+<p>Join a channel:</p>
+<pre class="brush:c; first-line:26">    my_send(sockfd, "JOIN #pat\r\n", debug);</pre>
+<p>Now all that is left to do read any network traffic the server sends.
+ In particular we are looking for the PING command from the server.</p>
+<pre class="brush:c; first-line:30">        n = my_read(sockfd, recvline, debug);
+
+        if (n &gt; 0) {
+            recvline[n] = 0;
+            if (strstr(recvline, "PING") != NULL) {
+                out[0] = 0;
+                pos = strstr(recvline, " ")+1;
+                sprintf(out, "PONG %s\r\n", pos);
+                my_send(sockfd, out, debug);
+            }
+        }</pre>
+<p>Once I receive a PING command I generate a PONG command that includes
+ the parameter sent with the PING command. For example if I received 
+“PING irc.example.com”, I respond with “PONG irc.example.com”.</p>
+<p>That’s it! The entire code is below. I will be adding some additional features in a later post.<span id="more-1"></span></p>
+<pre class="brush:c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;netdb.h&gt;
+#define MAXLINE 4096
+
+int my_connect(char *server, unsigned int port, int *sockfd);
+int my_send(int sockfd, char *out, int debug);
+int my_read(int sockfd, char *recvline, int debug);
+
+int main(int argc, char **argv) {
+    int sockfd, n, debug;
+    char recvline[MAXLINE+1], out[MAXLINE+1];
+    char *cmd, *pos;
+    char server[] = "64.150.185.111";
+    debug = 1;
+
+    if (!my_connect(server, 6667, &amp;sockfd)) {
+        printf("Failed to connect to %s.\n", server);
+        exit(1);
+    }
+
+    my_send(sockfd, "NICK clark\r\n", debug);
+    my_send(sockfd, "USER clark 8 * : Clark Clarkerson\r\n", debug);
+    my_send(sockfd, "JOIN #pat\r\n", debug);
+
+    while(1) {
+        recvline[0] = 0;
+        n = my_read(sockfd, recvline, debug);
+
+        if (n &gt; 0) {
+            recvline[n] = 0;
+            if (strstr(recvline, "PING") != NULL) {
+                out[0] = 0;
+                pos = strstr(recvline, " ")+1;
+                sprintf(out, "PONG %s\r\n", pos);
+                my_send(sockfd, out, debug);
+            }
+        }
+    }
+    exit(0);
+}
+
+int my_connect(char *server, unsigned int port, int *sockfd) {
+    struct sockaddr_in servaddr;
+    bzero(&amp;servaddr, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(port);
+
+    if ( (*sockfd = socket(AF_INET, SOCK_STREAM, 0)) &lt; 0) {
+        return 0;
+    }
+
+    if (inet_pton(AF_INET, server, &amp;servaddr.sin_addr) &lt;= 0) {
+        return 0;
+    }
+    if (connect(*sockfd, (struct sockaddr*)&amp;servaddr, sizeof(servaddr)) &lt; 0 ) {
+        return 0;
+    }
+
+    return 1;
+}
+
+int my_send(int sockfd, char *out, int debug) {
+    if (debug) {
+        printf("OUT: %s", out);
+    }
+    return send(sockfd, out, strlen(out), 0);
+}
+
+int my_read(int sockfd, char *recvline, int debug) {
+    int n;
+    n = read(sockfd, recvline, MAXLINE);
+    if (n &gt; 0 &amp;&amp; debug) {
+        printf("IN: %s", recvline);
+    }
+    return n;
+}</pre>
+<div class="clear"></div>
+<div id="post_nav">
+<p id="pn_next" class="pn">
+Identifying Courier IMAP I/O abusers <img src="The%20simplest%20C%20IRC%20bot%20possible%20%E2%80%B9%20Pat%20Lathem_files/arrow-right.svg" alt="arrow-right"><br>
+<a class="post-next" href="http://www.patlathem.com/identifying-courier-imap-io-abusers/"><span>Next post </span></a>
+</p>
+<p id="pn_prev" class="pn">
+</p>
+<div id="mline"></div>
+</div>
+<div class="clear"></div>
+<div id="comments">
+ 
+</div>
+</div>
+</div>
+<div class="clear"></div>
+</article>
+</div>
+</div>
+<footer class="center copy">
+<p> © 2016 Pat Lathem</p>
+<p> <a href="http://thriveweb.com.au/the-lab/pinzolo-a-free-responsive-wordpress-theme/">Pinzolo Theme</a> - Made on the Gold Coast by THRIVE </p>
+<p> Powered by <a href="http://wordpress.org/" title="WordPress">WordPress</a></p>
+<p id="thrive"> <img src="The%20simplest%20C%20IRC%20bot%20possible%20%E2%80%B9%20Pat%20Lathem_files/thrive.png" title="thrive" height="40" width="40"></p>
+</footer>
+</div>
+</div>
+
+</body></html>

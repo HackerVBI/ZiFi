@@ -1,0 +1,25 @@
+texts: http://ts.retropc.ru/get.php?src=hype
+demos: http://zxaaa.untergrund.net/wbrozzer_demos.php?p=1
+music: http://zxart.ee/zxnet/?a=m&p=2
+gfx:   http://zxart.ee/zxnet/?a=g&l=eng&p=1
+games: http://vtrdos.ru/exp.php
+press: http://ts.retropc.ru/vtrdos_press.php?p=5
+system:http://ts.retropc.ru/vtrdos_system.php?p=5
+
+unzip: http://ts.retropc.ru/unzipremote.php?f=http://vtrdos.ru/press/always/ALWAYS01.ZIP
+
+http://www.pouet.net/export/lastprodsreleased.rss.php?platform=ZX%20Enhanced&type=demo&howmany=120
+http://www.pouet.net/export/lastprodsadded.rss.php?platform=ZX%20Spectrum&type=demo&group=1&howmany=15
+	platform - specify the platform of productions to display.
+	type - specify the type of productions to display.
+	group - specify the group of productions to display.
+	howmany (1 to 100) (default = 10) - specify the number of productions to display.
+Download: http://www.pouet.net/export/prod.xnfo.php?which=9450
+
+http://ts.retropc.ru/sxg/?u=http://www.porn.com/blog/wp-content/uploads/2013/06/twin-jets.jpg
+
+17:18 <DMlog> ссылки такого вида
+17:18 <DMlog>     echo "[TS-repa commits]\r\nhttp://irclogs.retroscene.org/zjsn.php?src=api.github.com/repos/tslabs/zx-evo/events\r\n\r\n\r\n\r\n";
+17:18 <DMlog>     echo "[fuzix commits]\r\nhttp://irclogs.retroscene.org/zjsn.php?src=api.github.com/repos/EtchedPixels/FUZIX/events\r\n\r\n\r\n\r\n";
+
+http://retroscene.org/phpmyadmin/

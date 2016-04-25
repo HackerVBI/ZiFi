@@ -1,0 +1,248 @@
+/* ###################### OVERALL SETTINGS ###################### */
+BODY {
+  background-color : #dcdcdc;
+  color            : #000000;
+}
+
+td, tr, p, div {
+  font             : 11px Verdana, Arial, Helvetica, sans-serif;
+  color            : #000000;
+}
+
+ul {
+  margin           : 0px 0px 0px 10px;
+  /*margin           : 0px 0px 0px 0px;*/
+}
+
+li {
+  list-style       : inside url(../images/arrow.gif) 2px;
+  list-style-image : url(../images/arrow.gif);
+  /*list-style       : inside url(../images/nopicture.gif) 2px;
+  list-style-image : none;*/
+}
+
+hr {
+  height           : 1px;
+  width            : 100%;
+  color            : #D0D0D0;
+}
+
+.poll {
+  font             : 9px Arial, Helvetica, Verdana, sans-serif;
+  color            : #666666;
+  line-height      : 14px
+}
+
+/* ###################### UPPER BUTTON BAR ###################### */
+a.buttonbar:link, a.buttonbar:visited, .moduletable_topmenu a.mainlevel:link, .moduletable_topmenu a.mainlevel:visited {
+  font             : bold 10px Verdana, Arial, Helvetica, sans-serif;
+  color            : #000000;
+  text-transform   : uppercase;
+  text-decoration  : none;
+}
+
+.moduletable_topmenu a.mainlevel:link, .moduletable_topmenu a.mainlevel:visited {
+padding-left:20px;
+padding-right:20px;
+}
+
+.moduletable_topmenu span{
+color:#ccc;
+}
+
+
+.moduletable_topmenu a.mainlevel:hover {
+  color            : #000099;
+  text-decoration  : none;
+}
+
+a.buttonbar:hover {
+  color            : #000099;
+  text-decoration  : none;
+}
+
+
+.buttonheading a img {
+border:none;
+}
+
+/* ############## PATHWAY AND BOTTOM BUTTON BAR ############## */
+.pathway {
+  font             : 11px Verdana, Arial, Helvetica, sans-serif;
+  color            : #999999;
+}
+a.pathway:link, a.pathway:visited {
+  color            : #285078;
+  font-weight      : normal;
+}
+
+a.pathway:hover {
+  color            : #CC6600;
+  font-weight      : normal;
+}
+
+/* ################### MODULE SETTINGS ################### */
+.modules {
+  background       : #F0F0F0;
+}
+
+table.moduletable {
+  margin           : 0px 0px 0px 0px;
+  width            : 100%;
+}
+
+table.moduletable th, .moduletable h3, .moduletable_menu h3 {
+  font-size        : 11px;
+  font-weight      : bold;
+  width            : 100%;
+  color            : #000000;
+  text-align       : center;
+  border-bottom    : 1px solid #cccccc;
+  margin-bottom:0px;
+}
+
+table.moduletable td {
+  font-size        : 11px;
+  font-weight      : normal;
+}
+
+/* ################### MAIN AND SUB MENU SYSTEM ################### */
+.mainlevel {
+  letter-spacing   : 1px;
+  width            : 100%;
+}
+
+a.mainlevel:link, a.mainlevel:visited {
+  color            : #285078;
+}
+
+a.mainlevel:hover {
+  color            : #CC6600;
+}
+
+.sublevel {
+  letter-spacing   : 2px;
+  padding-left     : 7px;
+}
+
+/* ###################### SECTION LISTING SETTINGS ###################### */
+.sectiontableheader {
+  background       : url(../images/logo_bar_back.gif);
+  color            : #000;
+  font-weight      : bold;
+}
+
+td.sectiontableheader  a:link,  td.sectiontableheader  a:visited {
+  color            : white;
+  font-weight      : bold;
+}
+
+.sectiontableentry1 {
+  background-color : #F0F0F0;
+}
+
+.sectiontableentry2 {
+  background-color : #E0E0E0;
+}
+
+/* ###################### SMALL FONT SETTINGS ###################### */
+.small {
+  font             : 9px Verdana, Arial, Helvetica, sans-serif;
+  color            : #990000;
+  text-decoration  : none;
+  font-weight      : medium;
+}
+
+.smalldark {
+  font             : 9px Verdana, Arial, Helvetica, sans-serif;
+  color            : #000000;
+  font-weight      : normal;
+}
+
+/* ###################### CONTENT PAGE SETTINGS ###################### */
+.contentpane {
+  background       : #FFFFFF;
+}
+
+.contentpaneopen {
+  background       : #FFFFFF;
+}
+
+.contentheading {
+  font             : bold 11px Verdana, Arial, Helvetica, sans-serif;
+  color            : #004080;
+  text-align       : left
+}
+
+.componentheading {
+  font             : bold 13px Verdana, Arial, Helvetica, sans-serif;
+  color            : #004080;
+}
+
+.createdate {
+  font-family      : Arial, Helvetica, sans-serif;
+  font-size        : 10px;
+  color            : #999999;
+  text-align       : left;
+}
+
+/* ###################### FORMULAR SETTINGS ###################### */
+.button {
+  font             : bold 10px Verdana, Arial, Helvetica, sans-serif;
+  color            : #000000;
+  background-color : #C0C0C0;
+  border           : 1px solid #000000;
+  text-transform   : uppercase;
+  background       : url(../images/but_bar_back.gif);
+}
+
+.inputbox {
+  font             : 10px Verdana, Arial, Helvetica, sans-serif;
+  color            : #000000;
+  background-color : #A4AEBA;
+  border           : 1px solid #000000;
+}
+
+/* ###################### LINKS ###################### */
+a:link, a:visited {
+  font             : 11px Verdana, Arial, Helvetica, sans-serif;
+  color            : #406080;
+  text-decoration  : none;
+}
+
+a:hover {
+  color            : #990000;
+  text-decoration  : underline;
+}
+
+a:active {
+  color            : #CC0000;
+  background-color : #F0E0A0;
+  text-decoration  : underline;
+}
+
+a.category:link, a.category:visited {
+  color            : #285078;
+  font-weight      : bold;
+  letter-spacing   : 1px;
+}
+
+a.category:hover {
+  color            : #CC6600;
+}
+
+fieldset, form {
+border:none;
+
+}
+
+ul.mostread    {
+padding:0px;
+margin-left:15px;
+
+}
+
+li.mostread {
+padding-bottom:5px;
+list-style-image : none;
+}
