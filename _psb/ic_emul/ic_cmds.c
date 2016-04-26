@@ -1,14 +1,30 @@
+#ifdef __WIN32
 #include <winsock2.h>
+#else
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#endif
 
 #include "ic_comm.h"
 #include "ic_cmds.h"
 #include "uart.h"
 #include "log.h"
 
+#ifdef __WIN32
 //Winsock shit
 WORD wVersionRequested;
 WSADATA wsaData;
-
+#else
+typedef int SOCKET;
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR   -1
+#define closesocket close
+#endif
 
 //vars
 SOCKET sockets[SOCKET_MAX];
@@ -16,19 +32,20 @@ SOCKET sockets[SOCKET_MAX];
 
 
 //Init
-int init(char *comport)
+int init(char *sname, int baud)
 {
   int i;
 
   for(i=0; i<SOCKET_MAX; ++i)
     sockets[i]=0;
 
-  if(uart_init(comport) < 0) return -1;
+  if(uart_init(sname, baud) < 0) return -1;
 
+#ifdef __WIN32
   //Init winsock
   wVersionRequested = MAKEWORD(2,2);
   WSAStartup(wVersionRequested, &wsaData);
-  
+#endif  
 
   return 0;
 }
@@ -47,6 +64,7 @@ void process(void)
 
     switch(cmd)
     {
+      case IC_CMD_NOP:     cmd_nop();     break;
       case IC_CMD_SOCKET:  cmd_socket();  break;
       case IC_CMD_BIND:    cmd_bind();    break;
       case IC_CMD_CONNECT: cmd_connect(); break;
@@ -64,7 +82,7 @@ void process(void)
       case IC_CMD_RECVFROM: cmd_recvfrom(); break;
 
       default:
-        logerr("Wrong command #%2x!",cmd);
+        logerr("Wrong command #%02x!",cmd);
     }
   }
 
@@ -92,6 +110,12 @@ void cmd_res_ok(void)
 }
 
 
+//silently reply \0 for (re)sync purposes
+void cmd_nop(void)
+{
+  unsigned char p=0;
+  uart_write(&p,1);
+}
 
 
 
@@ -153,7 +177,11 @@ void cmd_bind(void)
   else
   { //correct fd
     loc_addr.sin_family = AF_INET; //fix in proto?
+#ifdef __WIN32
     loc_addr.sin_addr.S_un.S_addr=htonl(params[1] | (params[2]<<8) | (params[3]<<16) | (params[4]<<24));
+#else
+    loc_addr.sin_addr.s_addr=htonl(params[1] | (params[2]<<8) | (params[3]<<16) | (params[4]<<24));
+#endif
     loc_addr.sin_port=htons(params[5] | (params[6]<<8));
     if(bind(sockets[fd], (struct sockaddr *)&loc_addr, sizeof(loc_addr)) == 0)
     { //bind ok
@@ -186,7 +214,11 @@ void cmd_connect(void)
   else
   { //correct fd
     rm_addr.sin_family = AF_INET; //fix in proto?
+#ifdef __WIN32
     rm_addr.sin_addr.S_un.S_addr=htonl(params[4] | (params[3]<<8) | (params[2]<<16) | (params[1]<<24));
+#else
+    rm_addr.sin_addr.s_addr=htonl(params[4] | (params[3]<<8) | (params[2]<<16) | (params[1]<<24));
+#endif
     rm_addr.sin_port=htons(params[5] | (params[6]<<8));
     if(connect(sockets[fd], (struct sockaddr *)&rm_addr, sizeof(rm_addr)) == 0)
     { //connect ok
@@ -205,14 +237,14 @@ void cmd_connect(void)
 
 void cmd_listen(void)
 {
-
+  logerr("CMD_LISTEN not implemented yet.");
 }
 
 
 
 void cmd_accept(void)
 {
-
+  logerr("CMD_ACCEPT not implemented yet.");
 }
 
 
@@ -370,7 +402,7 @@ void cmd_gethostbyname(void)
   struct hostent *remoteHost;
   unsigned char params[10];
   unsigned char *buf;
-  unsigned short len,sent;
+  unsigned short len;
 
   //get params
   uart_read(params,2);
@@ -392,7 +424,7 @@ void cmd_gethostbyname(void)
       cmd_res_ok();
       memcpy(params,remoteHost->h_addr_list[0],4);
       uart_write(params,4);
-      log_("CMD_GETHOSTBYNAME: %s resolved to %d.%d.%d.%d.",buf,
+      log_("Host %s resolved to %d.%d.%d.%d.",buf,
           params[0],params[1],params[2],params[3]);
     }
     free(buf);
@@ -408,7 +440,7 @@ void cmd_gethostbyname(void)
 
 void cmd_gethostbyaddr(void)
 {
-
+  logerr("CMD_GETHOSTBYADDR not implemented yet.");
 }
 
 
@@ -464,7 +496,8 @@ void cmd_recv(void)
   unsigned char params[10];
   unsigned char fd;
   unsigned char *buf;
-  unsigned short len,reallen;
+  unsigned short len;
+  int reallen;
   fd_set fdset;
   struct timeval tout={0,0};
   int n;
@@ -503,7 +536,7 @@ void cmd_recv(void)
       else
       { //data present, read
         reallen=recv(sockets[fd],buf+3,len,0);
-        if(reallen==0)
+        if(reallen<=0)
         { //socket closed
           cmd_res_fail();
           log_("CMD_RECV: socket closed, id=%i.",fd);
@@ -532,14 +565,14 @@ void cmd_recv(void)
 
 void cmd_sendto(void)
 {
-
+  logerr("CMD_SENDTO not implemented yet.");
 }
 
 
 
 void cmd_recvfrom(void)
 {
-
+  logerr("CMD_RECVFROM not implemented yet.");
 }
 
 

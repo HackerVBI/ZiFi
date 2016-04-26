@@ -1,5 +1,6 @@
 
 
+#define IC_CMD_NOP		0x00
 #define IC_CMD_SOCKET		0x01
 #define IC_CMD_BIND		0x02
 #define IC_CMD_CONNECT		0x03

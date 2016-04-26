@@ -2,9 +2,17 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+int loglvl=0;
+
+void loginit(int lvl)
+{
+  loglvl=lvl;
+}
 
 void log_(const char *fmt, ...)
 {
+  if(loglvl>0)
+    return;
 #if 1
   va_list ap;
   char *msg=(char*)malloc(1024);
@@ -24,6 +32,8 @@ void log_(const char *fmt, ...)
 
 void logerr(const char *fmt, ...)
 {
+  if(loglvl>1)
+    return;
 #if 1
   va_list ap;
   char *msg=(char*)malloc(1024);
