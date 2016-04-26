@@ -124,7 +124,7 @@ do_init_music	ld a,0
 		jp main
 
 selfupdate_msg1		db "ZiFi ver. "
-cur_version		db '0.65',0
+cur_version		db '0.67',0
 
 autoupdate	ld hl,cur_version
 		ld de,upd_ver
@@ -1749,6 +1749,8 @@ create_link_list
 
 1		sub window_height
 2		ld (all_lines_counter+1),a
+
+		ld a,c
 		call set_text_colors
 
 		ld ix,link_adreses
@@ -1762,6 +1764,14 @@ create_link_list
 
 do_after_link_list		ld a,0				; действие после загрузки 
 				ld (do_after_load+1),a
+				ld c,0
+				cp play_music
+				jr nz,1f
+				ld c,1
+
+1				ld a,c
+				ld (autoplay+1),a
+
 loadpage_after_link_list	ld a,0				; страница для загрузки прода данного раздела
 				ld (load_ram_page+1),a
 		xor a
@@ -2284,7 +2294,48 @@ int_ex3		ld hl,0
 
 pt_play		call set_music_pages_lite
 		call music_player_play
-		jp restore_music_pages_lite
+
+autoplay	ld a,1
+		or a
+		jr z,pt_play_ex
+
+		ld a,(music_setup_vars)
+		bit 7,a
+		jr z,pt_play_ex
+	; loop is passed
+		ld a,(sum_list_lines+1)
+		dec a
+		ld c,a
+autoplay_num	ld a,0
+		inc a
+		cp c
+		jr c,1f
+		ld a,1
+1		ld (autoplay_num+1),a
+		call calc_link_num
+		ld a,list_ram_page
+		call set_page1
+		ld h,(ix+4)
+		ld l,(ix+3)
+		call parse_url
+		ld a,1
+		ld (load_sw+1),a
+pt_play_ex	jp restore_music_pages_lite
+/*
+SETUP	DB 0 ;set bit0, if you want to play without looping
+	     ;(optional);
+	     ;set bit1 for PT2 and reset for PT3 before
+	     ;calling INIT;
+	     ;bits2-3: %00-ABC, %01-ACB, %10-BAC (optional);
+	     ;bits4-5: %00-no TS, %01-2 modules TS, %10-
+	     ;autodetect PT3 TS-format by AlCo (PT 3.7+);
+	     ;Remark: old PT3 TS-format by AlCo (PT 3.6) is not
+	     ;documented and must be converted to new standard.
+	     ;bit6 is set each time, when loop point of 2nd TS
+	     ;module is passed (optional).
+	     ;bit7 is set each time, when loop point of 1st TS
+	     ;or of single module is passed (optional).
+*/
 
 set_256c_mode
 		ld bc,VCONFIG
@@ -2570,6 +2621,11 @@ sum_list_lines	ld a,0
 		djnz 2b
 		jr lmb_ex
 
+1		ld a,(do_after_load+1)
+		cp play_music
+		jr nz,1f
+		ld a,c
+		ld (autoplay_num+1),a
 1		ld a,c
 		call calc_link_num
 		ld a,list_ram_page
@@ -4296,8 +4352,9 @@ music_player		equ #c000
 music_player_init	equ @music_player+3
 music_player_play	equ @music_player+5
 music_player_mute	equ @music_player+8
+music_setup_vars	equ music_player+#55
 
-/*		
+/*
 	; uni player
 		org #c000
 music_player		INCLUDE	"_pt\ptx.asm"
@@ -4305,10 +4362,11 @@ music_player		INCLUDE	"_pt\ptx.asm"
 music_player_init	equ @music_player+3
 music_player_play	equ @music_player+5
 music_player_mute	equ @music_player+8
-
+music_setup_vars	equ music_player+#55
 music_players_end
 		SAVEBIN "_spg/ptplay.bin",music_player, music_players_end-music_player
 */
+
 	IF cable_zifi 
 		SAVEBIN "_spg/zifi_rs.bin",start, end-start
 	ELSE 
