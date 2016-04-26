@@ -1,3 +1,0 @@
-javascript:!function(){var t,e,n,l,r,i,o,u,h=document.querySelectorAll("p"),c=[];for(t=0;t<h.length;t++)if(n=h[t],r=n.querySelectorAll("b font a[id]"),r.length>0){for(u={id:r[0].getAttribute("id").replace("s",""),title:r[0].textContent,links:[]},l=n.querySelectorAll("font a.link"),e=0;e<l.length;e++)i={text:l[e].textContent,url:"http://vtrdos.ru"+l[e].getAttribute("href"),author:l[e].nextSibling.textContent.replace(" by ","")},u.links.push(i);c.push(u)}o=window.open("","","resizable=1;width=640,height=480"),o.document.write(JSON.stringify(c))}();
-
-// в адресную строку, как всегда, откроется окошко с результатом - system.php
