@@ -24,5 +24,7 @@ void cmd_recv(void);
 void cmd_sendto(void);
 void cmd_recvfrom(void);
 
+void cmd_info(void);
+void cmd_reset(void);
 
 

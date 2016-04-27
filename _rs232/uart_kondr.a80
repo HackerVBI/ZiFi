@@ -1,4 +1,4 @@
-;eRS232 for ZX-Evo
+;Standart RS232 aka Kondratyev
 
 	module uart
 
@@ -65,11 +65,7 @@ DLL	EQU BASEREG+#000	;(RW)Divisor Latch LSB
 DLH	EQU BASEREG+#100	;(RW)Divisor Latch MSB
 
 
-;eRS232 for ZX-Evo
-ERS_DR	EQU #00EF
-ERS_SR	EQU #C2EF
-ERS_ST	EQU #C3EF
-ERS_CR	EQU #C7EF
+
 
 
 ;set baud rate
@@ -85,12 +81,6 @@ SetBaud
 
 	ld b,high LCR
 	in a,(c):and !DLAB:out (c),a ;set DLAB=0
-
-	ld b,high ERS_CR
-	ld a,#F1
-	out (c),a
-	ld a,#07
-	out (c),a
 	ret
 
 
@@ -105,12 +95,12 @@ SetLineControl
 ;put char
 ;a=char
 PutChar
-	ld bc,ERS_ST
+	ld bc,LSR
 	exa
-pc1	in f,(c):jr z,pc1 ;wait for room
+pc1	in a,(c):and THRE:jr z,pc1 ;wait for room
         exa
 
-	ld b,high ERS_DR
+	ld b,high THR
 	out (c),a
 	ret
 
@@ -119,10 +109,10 @@ pc1	in f,(c):jr z,pc1 ;wait for room
 ;get char
 ;out: a=char
 GetChar
-	ld bc,ERS_SR
-gc1	in f,(c):jr z,gc1 ;wait for data
+	ld bc,LSR
+gc1	in a,(c):and DR:jr z,gc1 ;wait for data
 
-	ld b,high ERS_DR
+	ld b,high RBR
 	in a,(c)
 	ret
 
@@ -130,8 +120,8 @@ gc1	in f,(c):jr z,gc1 ;wait for data
 ;out: a=char, nc=got char, c=timed out
 GetCharTO
         ld de,0
-	ld bc,ERS_SR
-gc1l	in f,(c):jr nz,gc1e ;wait for data
+	ld bc,LSR
+gc1l	in a,(c):and DR:jr nz,gc1e ;wait for data
 	dec de
 	ld a,e:or d:jr nz,gc1l
 	;timed out
@@ -139,7 +129,7 @@ gc1l	in f,(c):jr nz,gc1e ;wait for data
 	ret
 
 gc1e
-	ld b,high ERS_DR
+	ld b,high RBR
 	in a,(c)
 	or a
 	ret
@@ -149,84 +139,105 @@ gc1e
 ;write block
 ;hl=buffer addr
 ;bc=len
-Write
-        ld      d,b
-        ld      e,c
-ww1     ld      bc,ERS_ST
-        in      c,(c)
-        jr      z,ww1
-        ld      a,d
-        or      a
-        jr      nz,ww2
-        ld      a,e
-        cp      c
-        jr      nc,ww2
-        ld      c,e
-ww2     ex      de,hl
-        xor     a
-        ld      b,a
-        sbc     hl,bc
-        ex      de,hl
-        ld      b,c
-        ld      c,low ERS_DR
-        otir
-        ld	a,d
-	or	e
-	jr	nz,ww1
+Write	push hl:exx:pop hl
+	ld de,high LSR+256*high THR+256
+
+	ld c,low LSR
+w0	ld b,e
+w1	in a,(c):and THRE:jr z,w1 ;wait
+
+	ld b,d:outi
+	exx
+	dec bc:ld a,b:or c
+	exx
+	jp nz,w0
 	ret
 
 ;read block
 ;hl=buffer addr
 ;bc=len
-Read
-        ld      d,b
-        ld      e,c
-rr1     ld      bc,ERS_SR
-        in      c,(c)
-        jr      z,rr1
-        ld      a,d
-        or      a
-        jr      nz,rr2
-        ld      a,e
-        cp      c
-        jr      nc,rr2
-        ld      c,e
-rr2     ex      de,hl
-        xor     a
-        ld      b,a
-        sbc     hl,bc
-        ex      de,hl
-        ld      b,c
-        ld      c,low ERS_DR
-        inir
-cable_cancel_download   ld a,0
-                        or a
-                        jp nz,cable_cancel_download_ex
-        ld	a,d
-	or	e
-	jr	nz,rr1
+Read	push hl:exx:pop hl
+	ld de,high LSR+256*high RBR ;+256
+
+	ld c,low LSR
+r0	ld b,e
+r1	in a,(c):and DR:jr z,r1 ;wait
+
+	ld b,d:ini
+	exx
+	dec bc:ld a,b:or c
+	exx
+	jp nz,r0
 	ret
 
-;;read block fast
-;;hl=buffer addr
-;;bc=len
-;Readf	push hl:exx:pop hl
-;	ld de,high LSR+256*high RBR ;+256
-;
-;	ld c,low LSR
-;r0_	dup 16
-;	ld b,e
-;	in a,(c):and DR:jr z,$-4 ;wait
-;
-;	ld b,d:ini
-;	edup
-;	exx
-;	dup 16
-;	dec bc
-;	edup
-;	ld a,b:or c
-;	exx
-;	jp nz,r0
-;	ret
+;read block fast
+;hl=buffer addr
+;bc=len
+Readf	push hl:exx:pop hl
+	ld de,high LSR+256*high RBR ;+256
+
+	ld c,low LSR
+r0_	dup 16
+	ld b,e
+	in a,(c):and DR:jr z,$-4 ;wait
+
+	ld b,d:ini
+	edup
+	exx
+	dup 16
+	dec bc
+	edup
+	ld a,b:or c
+	exx
+	jp nz,r0
+	ret
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	endmodule

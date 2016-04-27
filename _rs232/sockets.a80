@@ -3,6 +3,7 @@
 
 ; command codes
 
+IC_CMD_NOP		equ 0x00
 IC_CMD_SOCKET		equ 0x01
 IC_CMD_BIND		equ 0x02
 IC_CMD_CONNECT		equ 0x03
@@ -17,6 +18,9 @@ IC_CMD_SEND		equ 0x10
 IC_CMD_RECV		equ 0x11
 IC_CMD_SENDTO		equ 0x18
 IC_CMD_RECVFROM		equ 0x19
+
+IC_CMD_INFO		equ 0x30
+IC_CMD_RESET		equ 0xF0
 
 IC_CMD_RES_OK		equ 0x00
 IC_CMD_RES_FAIL		equ 0xff
@@ -298,8 +302,97 @@ ghbn2	ld bc,0
 
 
 
+;nop
+;>	byte #00
+;>       byte test_byte
+;<	byte inv_test_byte
+
+;IN:
+;a=test byte
+;OUT:
+;cy=error
+icnop
+	ld (icnop2+1),a
+	ld hl,cmd_buffer
+	ld (hl),IC_CMD_NOP:inc hl
+	ld (hl),a:dec hl
+	ld bc,2
+	call uart.Write
+
+	call uart.GetCharTO
+	ret c ;ret if error
+	cpl
+icnop2  cp 0
+	jr z,icnop3
+	scf
+	ret
+icnop3  or a
+	ret
 
 
+
+;info
+;>	byte #30
+;<       word len
+;<	ascii info_line
+;<       word len (0=end)
+;<	...
+
+;IN:
+;hl=info addr
+;OUT:
+;none
+
+info
+	ld (infoa+1),hl  ;dst addr
+	ld (hl),0        ;end marker
+	ld hl,cmd_buffer
+	ld (hl),IC_CMD_INFO
+	ld bc,1
+	call uart.Write
+
+infol
+	ld hl,cmd_buffer,bc,2
+	call uart.Read ;get str len
+	ld bc,(cmd_buffer)
+	ld a,b:or c:jr z,infoe
+
+infoa	ld hl,0
+	push bc,hl
+	call uart.Read ;get str
+	pop hl,bc
+	add hl,bc
+	ld (hl),0:inc hl
+	ld (hl),0        ;end marker
+	ld (infoa+1),hl  ;dst addr
+	jr infol
+
+infoe
+	ret
+
+
+
+
+
+
+
+;reset
+;>	byte #F0
+;<	byte res (0=ok)
+
+;IN:
+;hl=info addr
+;OUT:
+;none
+
+reset
+	ld hl,cmd_buffer
+	ld (hl),IC_CMD_RESET
+
+	ld hl,cmd_buffer,bc,1
+	call uart.Write
+	call uart.GetChar
+	ret
 
 
 	endmodule

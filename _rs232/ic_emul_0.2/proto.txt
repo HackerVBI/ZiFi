@@ -1,6 +1,39 @@
 
+Operation rules:
+
+All numbers encoded as little-endian.
+IP address encoding: 1.2.3.4 -> 01 02 03 04.
+Strings encoded as word_length+string.
+Socket read operation is non-blocking.
 
 
+Init algorithm:
+  pause for >1 uart byte
+  send some NOPs until returned values match
+  if matched
+    send RESET cmd
+    optionally send INFO cmd
+  if not matched
+    no ic found
+
+Work algorithm:
+  gethostbyname cmd
+  socket cmd
+  bind cmd (to 0.0.0.0:0)
+  connect cmd
+  send/recv cmds
+  close cmd
+
+
+
+
+
+Commands:
+
+nop
+>	byte #00
+>       byte test_byte
+<	byte inv_test_byte
 
 socket
 >	byte #01
@@ -117,16 +150,28 @@ recvfrom
 >?	word reallen
 >?	byte buf[reallen]
 	
+info
+>	byte #30
+<       word len
+<	ascii info_line
+<       word len (0=end)
+<	...
+
+reset
+>	byte #F0
+<	byte res (0=ok)
 
 
+
+
+
+Todo list:
 
 if_list
 
 if_config
 
 proxy_config
-
-soft_reset
 
 stats
 
@@ -146,17 +191,17 @@ stats
 /*
  * Types
  */
-#define SOCK_STREAM     1               /* stream socket */
-#define SOCK_DGRAM      2               /* datagram socket */
-#define SOCK_RAW        3               /* raw-protocol interface */
+#define IC_SOCK_STREAM     1               /* stream socket */
+#define IC_SOCK_DGRAM      2               /* datagram socket */
+#define IC_SOCK_RAW        3               /* raw-protocol interface */
 
 
 /*
  * Address families.
  */
-#define AF_UNSPEC       0               /* unspecified */
-#define AF_INET         2               /* internetwork: UDP, TCP, etc. */
-#define AF_INET6        23              /* Internetwork Version 6 */
+#define IC_AF_UNSPEC       0               /* unspecified */
+#define IC_AF_INET         2               /* internetwork: UDP, TCP, etc. */
+#define IC_AF_INET6        23              /* Internetwork Version 6 */
 
 
 

@@ -1,4 +1,5 @@
 
+/* ic commands */
 
 #define IC_CMD_NOP		0x00
 #define IC_CMD_SOCKET		0x01
@@ -17,11 +18,15 @@
 #define IC_CMD_SENDTO		0x18
 #define IC_CMD_RECVFROM		0x19
 
+#define IC_CMD_INFO		0x30
+#define IC_CMD_RESET		0xF0
+
 #define IC_CMD_RES_OK		0x00
 #define IC_CMD_RES_FAIL		0xff
 
 
+/* ic defines */
 
-
-
-
+#define IC_SOCK_STREAM		1	// stream socket (TCP)
+#define IC_SOCK_DGRAM		2	// datagram socket (UDP)
+#define IC_AF_INET		2	// internetwork: UDP, TCP, etc.

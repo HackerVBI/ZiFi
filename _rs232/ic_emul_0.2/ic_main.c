@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ic_main.h"
 #include "ic_comm.h"
 #include "ic_cmds.h"
 #include "log.h"
@@ -60,7 +61,7 @@ int main(int argc, char *argv[])
 
   if(q<2)
   {
-    printf("ZX-Spectrum Internet Controller Emulator v0.2.\n");
+    printf("ZX-Spectrum Internet Controller Emulator v%s.%s.\n",VER_MAJOR,VER_MINOR);
     printf("Serial device used: %s at %d baud.\n", sname, baud);
   }
 

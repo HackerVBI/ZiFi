@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #ifdef __WIN32
 #include <winsock2.h>
 #else
@@ -8,8 +10,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/utsname.h>
 #endif
 
+#include "ic_main.h"
 #include "ic_comm.h"
 #include "ic_cmds.h"
 #include "uart.h"
@@ -28,6 +32,9 @@ typedef int SOCKET;
 
 //vars
 SOCKET sockets[SOCKET_MAX];
+char _sname[16];
+int _baud;
+char _platf[128];
 
 
 
@@ -35,6 +42,9 @@ SOCKET sockets[SOCKET_MAX];
 int init(char *sname, int baud)
 {
   int i;
+#ifndef __WIN32
+  struct utsname ver;
+#endif
 
   for(i=0; i<SOCKET_MAX; ++i)
     sockets[i]=0;
@@ -46,6 +56,16 @@ int init(char *sname, int baud)
   wVersionRequested = MAKEWORD(2,2);
   WSAStartup(wVersionRequested, &wsaData);
 #endif  
+
+  //create info data
+  _baud=baud;
+  strncpy(_sname,sname,sizeof(_sname)-1);
+#ifdef __WIN32
+  strcpy(_platf,"Windows");
+#else
+  uname(&ver);
+  snprintf(_platf,sizeof(_platf)-1, "%s %s %s %s %s", ver.sysname, ver.nodename, ver.release, ver.version, ver.machine);
+#endif
 
   return 0;
 }
@@ -81,6 +101,9 @@ void process(void)
       case IC_CMD_SENDTO:   cmd_sendto();   break;
       case IC_CMD_RECVFROM: cmd_recvfrom(); break;
 
+      case IC_CMD_INFO:     cmd_info();     break;
+      case IC_CMD_RESET:    cmd_reset();    break;
+
       default:
         logerr("Wrong command #%02x!",cmd);
     }
@@ -110,10 +133,12 @@ void cmd_res_ok(void)
 }
 
 
-//silently reply \0 for (re)sync purposes
+//silently reply inverted value for (re)sync purposes
 void cmd_nop(void)
 {
   unsigned char p=0;
+  uart_read(&p,1);
+  p=~p;
   uart_write(&p,1);
 }
 
@@ -123,6 +148,7 @@ void cmd_socket(void)
 {
   unsigned char params[10];
   SOCKET tsock;
+  int domain, type, protocol;
   int i;
 
   //get params
@@ -138,7 +164,43 @@ void cmd_socket(void)
   }
   else
   { //found, create real socket
-    tsock=socket((int)params[0],(int)params[1],(int)params[2]);
+    if(params[0]==IC_AF_INET)
+    {
+      domain = AF_INET;
+    }
+    else
+    { //unsupported domain
+      cmd_res_fail();
+      logerr("CMD_SOCKET: Wrong domain passed.");
+      return;
+    }
+    if(params[1]==IC_SOCK_STREAM)
+    {
+      type = SOCK_STREAM;
+    }
+    else
+    if(params[1]==IC_SOCK_DGRAM)
+    {
+      type = SOCK_DGRAM;
+    }
+    else
+    { //unsupported type
+      cmd_res_fail();
+      logerr("CMD_SOCKET: Wrong type passed.");
+      return;
+    }
+    if(params[2]==0)
+    {
+      protocol = 0;
+    }
+    else
+    { //unsupported protocol
+      cmd_res_fail();
+      logerr("CMD_SOCKET: Wrong protocol passed.");
+      return;
+    }
+    //create socket
+    tsock=socket(domain,type,protocol);
 
     if(tsock==INVALID_SOCKET)
     { //socket() fail
@@ -178,9 +240,9 @@ void cmd_bind(void)
   { //correct fd
     loc_addr.sin_family = AF_INET; //fix in proto?
 #ifdef __WIN32
-    loc_addr.sin_addr.S_un.S_addr=htonl(params[1] | (params[2]<<8) | (params[3]<<16) | (params[4]<<24));
+    loc_addr.sin_addr.S_un.S_addr=htonl(params[4] | (params[3]<<8) | (params[2]<<16) | (params[1]<<24));
 #else
-    loc_addr.sin_addr.s_addr=htonl(params[1] | (params[2]<<8) | (params[3]<<16) | (params[4]<<24));
+    loc_addr.sin_addr.s_addr=htonl(params[4] | (params[3]<<8) | (params[2]<<16) | (params[1]<<24));
 #endif
     loc_addr.sin_port=htons(params[5] | (params[6]<<8));
     if(bind(sockets[fd], (struct sockaddr *)&loc_addr, sizeof(loc_addr)) == 0)
@@ -217,7 +279,7 @@ void cmd_connect(void)
 #ifdef __WIN32
     rm_addr.sin_addr.S_un.S_addr=htonl(params[4] | (params[3]<<8) | (params[2]<<16) | (params[1]<<24));
 #else
-    rm_addr.sin_addr.s_addr=(params[1] | (params[2]<<8) | (params[3]<<16) | (params[4]<<24));
+    rm_addr.sin_addr.s_addr=htonl(params[4] | (params[3]<<8) | (params[2]<<16) | (params[1]<<24));
 #endif
     rm_addr.sin_port=htons(params[5] | (params[6]<<8));
     if(connect(sockets[fd], (struct sockaddr *)&rm_addr, sizeof(rm_addr)) == 0)
@@ -269,6 +331,46 @@ void cmd_close(void)
   }
 }
 
+
+void cmd_reset(void)
+{
+  int i;
+
+  log_("IC reset.");
+  //loop thru all sockets
+  for(i=0; i<SOCKET_MAX; ++i)
+    if(sockets[i]!=0)
+    {
+      closesocket(sockets[i]);
+      sockets[i]=0;
+      log_("CMD_RESET: Close socket, id=%i", i);
+    }
+  cmd_res_ok();
+}
+
+
+void ic_send_string(const char *fmt, ...)
+{
+  va_list ap;
+  int n;
+  char buf[256]={0};
+
+  va_start(ap, fmt);
+  n=vsnprintf(buf+2, sizeof(buf)-1-2, fmt, ap);
+  buf[0]=n&0xff; buf[1]=n>>8; uart_write(buf,n+2);
+  va_end(ap);
+}
+
+void cmd_info(void)
+{
+  ic_send_string("IC v%s.%s",VER_MAJOR,VER_MINOR);
+  ic_send_string("Platform: %s",_platf);
+  ic_send_string("Serial device: %s @ %d",_sname,_baud);
+  ic_send_string("Max sockets: %d", SOCKET_MAX);
+  ic_send_string(""); //end of info
+
+  log_("IC info sent.");
+}
 
 
 void cmd_select(void)
@@ -496,7 +598,8 @@ void cmd_recv(void)
   unsigned char params[10];
   unsigned char fd;
   unsigned char *buf;
-  unsigned short len,reallen;
+  unsigned short len;
+  int reallen;
   fd_set fdset;
   struct timeval tout={0,0};
   int n;
@@ -535,7 +638,7 @@ void cmd_recv(void)
       else
       { //data present, read
         reallen=recv(sockets[fd],buf+3,len,0);
-        if(reallen==0)
+        if(reallen<=0)
         { //socket closed
           cmd_res_fail();
           log_("CMD_RECV: socket closed, id=%i.",fd);
