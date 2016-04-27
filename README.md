@@ -4,6 +4,10 @@
 About project (ru): [ZiFi или интернет для Z80 ](http://hype.retroscene.org/blog/dev/363.html), 
 [ZiFi v. 0.61 released! ](http://hype.retroscene.org/blog/dev/391.html)
 
-Work with cable socket driver by PSB and Wifi module ESP8266, driver by DDp / Hacker VBI
+**Work with sites:** vtrdos, zxart, prods.tslabs, hype, pouet, irclogs;
+**Download:** games, system progs, demopack disk's,  diskmag's;
+**See:** zx spectrum screens;
+**Listen:** Ay8910 chip music
 
-For Z80 assembler
+_Work with cable socket driver by PSB and Wifi module ESP8266, driver by DDp / Hacker VBI_
+> For Z80 CPU
