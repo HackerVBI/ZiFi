@@ -43,7 +43,7 @@ start_paging_page	equ 1
 analizator_screen_adr	equ #c2e0-4
 progress_bar_screen_adr	equ #0012
 	
-cable_zifi=1		; 1 - Cable version, 0 - wifi version
+cable_zifi=0		; 1 - Cable version, 0 - wifi version
 
 	IF cable_zifi 
 start_download_adress 	equ 0
@@ -76,7 +76,7 @@ start
 	ELSE
 		call init_zifi
 	ENDIF
-		call autoupdate		; !!!!!!!!!!!!!
+;		call autoupdate		; !!!!!!!!!!!!!
 main
 sites_sw	ld a,0
 		or a
@@ -629,7 +629,11 @@ rdipd:  	call    zifi_getchar
 		ret z
 		jr      rdipd
 
-zifi_getchar:	ld      bc,0xc0ef
+zifi_getchar:	
+wifi_cancel_download	ld a,0
+		or a
+		jr nz,wifi_cancel_download_ex
+		ld      bc,0xc0ef
 		in      a,(c)
 		jr z,zifi_getchar
 		ld      b,0
@@ -637,6 +641,14 @@ zifi_getchar:	ld      bc,0xc0ef
 		dec     b
 		ret
 
+wifi_cancel_download_ex
+		ld sp,#bfff
+		xor a
+		ld (load_sw+1),a
+		ld (wifi_cancel_download+1),a
+		ld hl,status_copy		; clear statusbar gfx
+		call set_ports
+		jp main
 
 count_ipd_lenght
 		ld hl,0			; count lenght
@@ -813,6 +825,9 @@ zifi_input_fifo_check
 3		in a,(c)
 		or a				; 0 - input FIFO is empty,
 		ret nz
+		ld a,(wifi_cancel_download+1)
+		or a
+		jp nz,wifi_cancel_download_ex
 		halt
 		dec e
 		jr nz,3b
@@ -1244,7 +1259,7 @@ parse_text4	ld (hl),c
 parse_text_ex	xor a
 		ld (hl),a
 		inc hl
-		ld (hl),d
+		ld (hl),a
 		ret
 /*
 		ld de,window_start_Yl	; text page
@@ -2442,7 +2457,7 @@ scroll_sw	ld a,0
 		or a
 		jr z,lmb_old
 
-wheel_old	ld c,0
+wheel_old	ld c,#f0
 		ld a,(mouse_button)
 		cpl
 		and #f0
@@ -2697,6 +2712,8 @@ status_click
 		jr z,lmb_ex	; url with link list not loaded
 
 		call mouse_x_div8
+		cp #0a
+		jr c,cancel_download
 		cp #19
 		jp z,music_play
 		cp #1a
@@ -2716,7 +2733,13 @@ status_click
 		jp z,page_forward
 		jr lmb_ex
 
-
+cancel_download	ld a,1
+	if cable_zifi=1
+		ld (uart.cable_cancel_download+1),a
+	else 
+		ld (wifi_cancel_download+1),a
+	endif
+		jr lmb_ex
 
 first_page
 current_list_url	
@@ -4184,7 +4207,7 @@ zifi_init:
 ;; PSB com driver	---------------------------------
 	IF cable_zifi 
 
-	include "_psb/sockets.mac"
+	include "_rs232/sockets.mac"
 psb_start	jp init
 psb_get		jp get
 
@@ -4321,6 +4344,16 @@ get_err call get_e
 	inc a
 	ret
 
+cable_cancel_download_ex
+		ld sp,#bfff
+		xor a
+		ld (uart.cable_cancel_download+1),a
+		ld (load_sw+1),a
+		close fd
+		call noclose
+		ld hl,status_copy		; clear statusbar gfx
+		call set_ports
+		jp main
 
 ;-----------------------------------------------------------
 
@@ -4330,8 +4363,8 @@ my_addr	db 0,0,0,0:dw 0 ;my ip+port
 server_addr db 93,158,134,3:dw 80
 
 ;code
-	include "_psb/uart.a80"
-	include "_psb/sockets.a80"
+	include "_rs232/uart.a80"
+	include "_rs232/sockets.a80"
 
 ; PSB com driver  ---------------------
 	ENDIF

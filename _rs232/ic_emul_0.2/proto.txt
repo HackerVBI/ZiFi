@@ -1,0 +1,162 @@
+
+
+
+
+socket
+>	byte #01
+	byte address_family
+	byte type
+	byte protocol
+<	byte res (0=ok)
+<?	byte fd
+
+bind
+>	byte #02
+	byte fd
+	long my_addr
+	word port
+<	byte res (0=ok)
+
+connect
+>	byte #03
+	byte fd
+	long serv_addr
+	word port
+<	byte res (0=ok)
+
+
+listen
+>	byte #04
+	byte fd
+<	byte res (0=ok)?
+
+
+accept
+>	byte #05
+	byte fd
+<	byte res (0=ok)
+<???
+
+
+close
+>	byte #06
+	byte fd
+<	byte res (0=ok)
+
+
+select
+>	byte #07
+	byte fd_read_cnt
+	byte fd_write_cnt
+	byte fd_except_cnt
+	byte fd_read[fd_read_cnt]
+	byte fd_write[fd_write_cnt]
+	byte fd_exc[fd_exc_cnt]
+<	byte res (0=ok)
+<?	byte fd_read_sig
+<?	byte fd_write_sig
+<?	byte fd_except_sig
+<??	byte fd_read[fd_read_sig]
+<??	byte fd_write[fd_write_sig]
+<??	byte fd_exc[fd_exc_sig]
+
+
+
+gethostbyname
+>	byte #20
+>       word name_len
+>	ascii hostname
+<	byte res (0=ok)
+<?      long ip
+
+gethostbyaddr
+>	byte #21
+	long addr
+	byte type
+<	byte res (0=ok)
+<???
+
+
+
+
+send
+>	byte #10
+	byte fd
+	word buflen
+	byte flags
+<	byte res (0=ok)
+>?	byte buf[buflen]
+<?	word realsent (#ffff = error)
+
+
+
+recv
+>	byte #11
+	byte fd
+        word len
+	byte flags
+<	byte res (0=ok)
+>?	word reallen
+>??	byte buf[reallen]
+
+sendto
+>	byte #18
+	byte fd
+	word len
+	int flags
+	long to
+<	byte res (0=ok)
+>?	byte buf[len]
+<?	word realsent
+
+recvfrom
+>	byte #19
+	byte fd
+	word len
+<	byte res (0=ok)
+>?	word reallen
+>?	byte buf[reallen]
+	
+
+
+
+if_list
+
+if_config
+
+proxy_config
+
+soft_reset
+
+stats
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+ * Types
+ */
+#define SOCK_STREAM     1               /* stream socket */
+#define SOCK_DGRAM      2               /* datagram socket */
+#define SOCK_RAW        3               /* raw-protocol interface */
+
+
+/*
+ * Address families.
+ */
+#define AF_UNSPEC       0               /* unspecified */
+#define AF_INET         2               /* internetwork: UDP, TCP, etc. */
+#define AF_INET6        23              /* Internetwork Version 6 */
+
+
+
