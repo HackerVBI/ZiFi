@@ -43,7 +43,7 @@ start_paging_page	equ 1
 analizator_screen_adr	equ #c2e0-4
 progress_bar_screen_adr	equ #0012
 	
-cable_zifi=0		; 1 - Cable version, 0 - wifi version
+cable_zifi=1		; 1 - Cable version, 0 - wifi version
 
 	IF cable_zifi 
 start_download_adress 	equ 0
@@ -423,11 +423,22 @@ load_ram_page	ld a,0
 		ld hl,modem_command
 		call psb_get
 
-	ELSE
+		ld a,(cable_cancel_download+1)
+		or a
+		jr z,file_downloaded
+		xor a
+		ld (cable_cancel_download+1),a
+		ld (load_sw+1),a
+		pop af
+		ld hl,status_copy		; clear statusbar gfx
+		call set_ports
+		jp main
 
+	ELSE
 		call zifi_get
 	ENDIF
 
+file_downloaded
 ; bc: hl - lenght of readed data
 		ld ix,read_threads
 		ld a,c
@@ -2735,7 +2746,7 @@ status_click
 
 cancel_download	ld a,1
 	if cable_zifi=1
-		ld (uart.cable_cancel_download+1),a
+		ld (cable_cancel_download+1),a
 	else 
 		ld (wifi_cancel_download+1),a
 	endif
@@ -4309,7 +4320,7 @@ get_loop
 	or a:jr nz,get_end
 cable_cancel_download   ld a,0
                         or a
-                        jp nz,cable_cancel_download_ex
+                        jr nz,get_end
 
 ;	ld a,b:or c:jr z,get_end
 	call view_progress_bar
@@ -4348,16 +4359,7 @@ get_err call get_e
 	inc a
 	ret
 
-cable_cancel_download_ex
-		ld sp,#bfff
-		xor a
-		ld (uart.cable_cancel_download+1),a
-		ld (load_sw+1),a
-		close fd
-		call noclose
-		ld hl,status_copy		; clear statusbar gfx
-		call set_ports
-		jp main
+
 
 ;-----------------------------------------------------------
 
