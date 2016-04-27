@@ -1,3 +1,4 @@
+![ZiFi](http://ts.retropc.ru/logo.png "ZiFi")
 #ZiFi
 ##Internet client for ZX Evolution with TS Conf
 
@@ -18,4 +19,4 @@ About project (ru): [ZiFi или интернет для Z80 ](http://hype.retro
 _Work with cable socket driver by PSB and Wifi module ESP8266, driver by DDp / Hacker VBI_
 > For Z80 CPU
 
-![ZiFi](http://ts.retropc.ru/logo.png "ZiFi")
+
