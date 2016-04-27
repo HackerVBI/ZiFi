@@ -4307,6 +4307,10 @@ get_loop
 	call sockets.recv
 	pop hl
 	or a:jr nz,get_end
+cable_cancel_download   ld a,0
+                        or a
+                        jp nz,cable_cancel_download_ex
+
 ;	ld a,b:or c:jr z,get_end
 	call view_progress_bar
 	add hl,bc
