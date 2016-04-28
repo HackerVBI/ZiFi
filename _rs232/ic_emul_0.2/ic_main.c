@@ -16,8 +16,9 @@ void usage(void)
 #else
   printf("Usage: ic /dev/ttyUSBx [-b baudrate] [-q] [-q]\n\n");
 #endif
-  printf("Supported baud rates: 115200 (default), 57600, 38400,\n");
-  printf("                      19200, 9600, 4800, 2400, 1200\n");
+  printf("Supported baud rates: 230400, 115200 (default), 57600,\n");
+  printf("                      38400, 19200, 9600, 4800, 2400,\n");
+  printf("                      1200\n");
   printf("Use single -q for quiet mode,\n");
   printf("double -q for complete silence.\n");
 }

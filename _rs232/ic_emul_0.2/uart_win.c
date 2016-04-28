@@ -13,6 +13,7 @@ static DWORD get_baud(int baud)
 {
   switch(baud)
   {
+    case 230400: return 230400;
     case 115200: return CBR_115200;
     case 57600:  return CBR_57600;
     case 38400:  return CBR_38400;
