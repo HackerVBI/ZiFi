@@ -43,7 +43,7 @@ start_paging_page	equ 1
 analizator_screen_adr	equ #c2e0-4
 progress_bar_screen_adr	equ #0012
 	
-cable_zifi=1		; 1 - Cable version, 0 - wifi version
+cable_zifi=0		; 1 - Cable version, 0 - wifi version
 
 	IF cable_zifi 
 start_download_adress 	equ 0
@@ -76,7 +76,7 @@ start
 	ELSE
 		call init_zifi
 	ENDIF
-;		call autoupdate		; !!!!!!!!!!!!!
+		call autoupdate		; !!!!!!!!!!!!!
 main
 sites_sw	ld a,0
 		or a
@@ -124,7 +124,7 @@ do_init_music	ld a,0
 		jp main
 
 selfupdate_msg1		db "ZiFi ver. "
-cur_version		db '0.67',0
+cur_version		db '0.70',0,0
 
 autoupdate	ld hl,cur_version
 		ld de,upd_ver
@@ -179,9 +179,7 @@ autoupdate	ld hl,cur_version
 1		ld de,checksum_error_mes
 		jr 3f
 
-2		ld a,sd_driver_page
-		call set_page0
-
+2		call init_sd_card
 		CALL SETROOT; возвращаемся в коневой
 		LD HL,DIR2
 		CALL FENTRY
@@ -205,10 +203,12 @@ autoupdate	ld hl,cur_version
 		call zifi_echo
 		jp set_download_dir
 
-selfupdate_msg2		db "Check for updates... ",0
-checksum_error_mes	db "Checksum error, please restart",0
-not_update_message	db "Your ZiFi is up to date.",0
-update_message		db "-+- Your ZiFi is updated! -+- Please restart -+-",0
+wifi_connected		db 'Connected succefully',0,0
+wifi_try_connect	db #0d,#0a,'Try connect to SSID',0,0	
+selfupdate_msg2		db "Check for updates... ",0,0
+checksum_error_mes	db "Checksum error, please restart",0,0
+not_update_message	db "Your ZiFi is up to date.",0,0
+update_message		db "-+- Your ZiFi is updated! -+- Please restart -+-",0,0
 
 selfupdate	db "http://ts.retropc.ru/zifi_ver.php?"
 	IF cable_zifi 
@@ -412,6 +412,8 @@ load_ram_page	ld a,0
 		call set_ports
 		ld de,download_icon
 		call set_icon
+		ld hl,cancel_icon_copy
+		call set_ports
 		call on_int_dma
 		ld hl,progress_bar_screen_adr-1
 		ld (progress_bar+1),hl
@@ -422,23 +424,11 @@ load_ram_page	ld a,0
 		ld a,(load_ram_page+1)
 		ld hl,modem_command
 		call psb_get
-
-		ld a,(cable_cancel_download+1)
-		or a
-		jr z,file_downloaded
-		xor a
-		ld (cable_cancel_download+1),a
-		ld (load_sw+1),a
-		pop af
-		ld hl,status_copy		; clear statusbar gfx
-		call set_ports
-		jp main
-
 	ELSE
 		call zifi_get
 	ENDIF
 
-file_downloaded
+
 ; bc: hl - lenght of readed data
 		ld ix,read_threads
 		ld a,c
@@ -484,7 +474,8 @@ file_downloaded
 		jp on_int_dma
 
 
-zifi_get	ld a,(load_ram_page+1)
+zifi_get	call wait_frame
+		ld a,(load_ram_page+1)
 		ld (zipd_page+1),a
 		call set_page0
 		inc a
@@ -493,18 +484,24 @@ zifi_get	ld a,(load_ram_page+1)
 		ld (readed_len_low+1),hl
 		ld hl,cmd_conn2site	; AT+CIPSTART	- connect to site
 		call zifi_send
+
+		ld de,str_already_con
+        	call buffer_cmp
+;        	or a
+	     	jr z,1f
+
 		ld de,str_ok
         	call buffer_cmp
-        	cp low output_buff+#bf
-		jr z,zifi_get
+;        	cp low output_buff+#bf
+		jr nz,zifi_get
 
 1		ld hl,cmd_cipsend	; AT+CIPSEND=<link ID>,<length>
 		call zifi_send_raw
 2		call fifo_inir
 		ld de,str_ok
         	call buffer_cmp
-        	cp low output_buff+#bf
-        	jr z,2b
+;        	cp low output_buff+#bf
+        	jr nz,2b
 1		ld a,(hl)
 		inc hl
 		cp #ff
@@ -546,7 +543,7 @@ o1		ld a,l
 		ld hl,start_download_adress		; load in page0 - page1
 		ld (zipd_adr+1),hl
 read_all_ipds				; call read_idp_packet
-		
+
 reread_ipd	;ld a,3
 ;		out (#fe),a
 		ld e,#ff
@@ -556,12 +553,12 @@ reread_ipd	;ld a,3
 ;		out (#fe),a
 		ld de,CLOSED
 		call buffer_cmp
-		or a			; CLOSED, exit
+;		or a			; CLOSED, exit
 		jp z,zifi_read_ipd_ex
 		ld de,str_ipd
 		call buffer_cmp
-		cp low output_buff+#bf
-		jr z,reread_ipd
+;		cp low output_buff+#bf
+		jr nz,reread_ipd
 		ex de,hl
 		call count_ipd_lenght		; in HL - lenght of ipd packet
 		ld (zipd_full_len+1),hl
@@ -640,11 +637,7 @@ rdipd:  	call    zifi_getchar
 		ret z
 		jr      rdipd
 
-zifi_getchar:	
-wifi_cancel_download	ld a,0
-		or a
-		jr nz,wifi_cancel_download_ex
-		ld      bc,0xc0ef
+zifi_getchar:	ld      bc,0xc0ef
 		in      a,(c)
 		jr z,zifi_getchar
 		ld      b,0
@@ -766,8 +759,7 @@ zifi_send_echo	push hl
 		ld b,1
 		call zifi_echo
 		pop hl
-		call zifi_send_raw
-		call fifo_inir
+		call zifi_send
 1		ld a,(hl)
 		inc hl
 		cp #0d+1
@@ -836,10 +828,10 @@ zifi_input_fifo_check
 3		in a,(c)
 		or a				; 0 - input FIFO is empty,
 		ret nz
-		ld a,(wifi_cancel_download+1)
+wifi_cancel_download	ld a,0
 		or a
 		jp nz,wifi_cancel_download_ex
-		halt
+		call wait_frame
 		dec e
 		jr nz,3b
 error		ld a,2
@@ -886,9 +878,12 @@ buffer_cmp0	ld a,(de)
 		jr z,buffer_cmp1
 		ld a,l
 		cp c
-		ret z
+		jr z,buffer_cmp_notfound
 		inc hl
 		jr buffer_cmp0
+buffer_cmp_notfound
+		or a
+		ret
 
 buffer_cmp1	inc de
 		inc hl
@@ -916,6 +911,7 @@ view_progress_bar
 		ld a,b
 		or a
 		ret z
+		
 		push hl
 		push bc
 		push bc
@@ -1559,13 +1555,16 @@ parse_ini
 		call cp_ini
 		ld (ssid_ini+1),hl
 2		ld a,(hl)
-		cp #0d
-		jr z,1f
+		cp #0d+1
+		jr c,1f
 		inc hl
 		jr 2b
 1		inc hl
+		ld a,(hl)
+		cp #0d+1
+		jr nc,1f
 		inc hl
-		ld b,9
+1		ld b,9
 		call cp_ini
 		ld (pass_ini+1),hl
 ssid_ini	ld hl,0
@@ -1644,6 +1643,11 @@ download_site_list
 		db #00
 
 gfx_site_list	db "Graphics: zxart.ee",#0d,#0a, "http://zxart.ee/zxnet/?a=g",#0d,#0a, view_gfx,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db " Most popular",#0d,#0a, "http://zxart.ee/zxnet/?a=g&o=p",#0d,#0a, view_gfx,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db " Top-rated",#0d,#0a, "http://zxart.ee/zxnet/?a=g&o=r",#0d,#0a, view_gfx,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db " First places",#0d,#0a, "http://zxart.ee/zxnet/?a=g&o=w",#0d,#0a, view_gfx,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db " Top of last year published",#0d,#0a, "http://zxart.ee/zxnet/?a=g&o=y",#0d,#0a, view_gfx,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+
 		db #00
 music_site_list	db "Music database: zxart.ee",#0d,#0a, "http://zxart.ee/zxnet/?a=m",#0d,#0a, play_music,music_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db " Most popular",#0d,#0a, "http://zxart.ee/zxnet/?a=m&o=p",#0d,#0a, play_music,music_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
@@ -2186,7 +2190,7 @@ save_mode	ld a,1
 		jr z,int_ex2
 mouse_sw	ld a,1
 		or a
-		call nz,mouse
+		call nz,mouse_proc
 link_highlight	ld a,0
 		or a
 		call nz,link_highlight_view
@@ -2453,7 +2457,6 @@ ay_volume	ds 3
 
 
 
-; Mouse_proc
 /*
 1  D0 - левая кнопка
 2  D1 - правая кнопка
@@ -2723,7 +2726,9 @@ status_click
 		jr z,lmb_ex	; url with link list not loaded
 
 		call mouse_x_div8
-		cp #0a
+		cp #10
+		jr c,lmb_ex
+		cp #12
 		jr c,cancel_download
 		cp #19
 		jp z,music_play
@@ -2746,7 +2751,7 @@ status_click
 
 cancel_download	ld a,1
 	if cable_zifi=1
-		ld (cable_cancel_download+1),a
+		ld (uart.cable_cancel_download+1),a
 	else 
 		ld (wifi_cancel_download+1),a
 	endif
@@ -2992,7 +2997,7 @@ search_input_adress3
 		ret
 
 
-mouse		call mouse_buttons
+mouse_proc	call mouse_buttons
 		call mouse_pos
 
 		ld a,(mouse_y)
@@ -3019,8 +3024,6 @@ mouse_mrg_y_top	ld hl,0
 		jr z,mouse_margin_y_ex
 mouse_mrg_y_top2
 		ld (mouse_mrg_y_top+1),hl
-
-
 
 mouse_margin_y_ex
 		ld hl,(mouse_x)
@@ -3476,6 +3479,18 @@ status_icon_copy
 		db #27,DMA_BLT + DMA_DALGN +DMA_ASZ
 		db #ff
 
+cancel_icon_copy
+		db #1a,low cancel_icon
+		db #1b,high cancel_icon
+		db #1c,2 
+		db #1d,4+4+128
+		db #1e,#3e-2
+		db #1f,Vid_page+8
+		db #26,8/2-1
+		db #28,7-1
+		db #27,DMA_BLT + DMA_DALGN +DMA_ASZ
+		db #ff
+
 
 
 sprites		db #1a,low spr_db
@@ -3640,6 +3655,7 @@ url_len			ds 6
 			db 0
 
 str_ok:         defb    "OK",13,0
+str_already_con:defb    "ALREADY CONNECT",13,0	
 str_error:      defb    "ERROR",13,0
 str_fail:       defb    "FAIL",13,0
 str_send_ok:    defb    "SEND OK",13,0
@@ -3657,7 +3673,6 @@ http_part3
 
 zip_url_buffer	db "http://ts.retropc.ru/unzipremote.php?f="
 zip_url_buffer_data	ds 256
-
 
 list_search_db
 		db "Search:"
@@ -3680,8 +3695,8 @@ modem_command		ds 256+128
 current_paging_url	ds 150
 
 sd_init
-		ld a,sd_driver_page
-		call set_page0
+		call init_sd_card
+		
 		CALL DOS_SWP; DEPACK Driver
 		CALL DEV_INI
 		JP NZ,ER0
@@ -3713,13 +3728,15 @@ sd_init
 [17:40:34] Koshi: по то му же FENTRY
 */
 
+
 on_int_dma	ld a,1
 		jr sw_int_dma
 off_int_dma	xor a
 sw_int_dma	ld (save_mode+1),a
 	;	ld (analizator_sw+1),a
 ;		ld (mouse_sw+1),a
-		jp wait_frame
+;		jp wait_frame
+		ret
 
 
 save_downloaded_file	; ld de,10884	; file lenght 
@@ -3754,8 +3771,7 @@ save_downloaded_file	; ld de,10884	; file lenght
 */
 		push hl
 ;Create File (flag,size,name,0):
-		ld a,sd_driver_page
-		call set_page0
+		call init_sd_card
 		LD HL,FILE
 		CALL MKFILE
 		pop bc		; bc= num sectors
@@ -3824,8 +3840,6 @@ save_64		ld b,c
 */
 		ld hl,status_copy		; clear statusbar gfx
 		call set_ports
-
-		call on_int_dma
 		jp sd_exit
 
 DEL512  ;i:[DE,HL]/512
@@ -3850,9 +3864,8 @@ L33T    SRL D:RR E,H,L,C
 ADD4B   ADD HL,BC:RET NC:INC DE
         RET
 ; читаем настройки:
-load_ini
-		ld a,sd_driver_page
-		call set_page0
+load_ini	
+		call init_sd_card
 		LD HL,DIR2
 		CALL FENTRY
 		CALL SETDIR
@@ -3886,12 +3899,12 @@ load_ini
 ;LD B,1:CALL LOAD512
 
 current_dir	call SETDIR
+		
 		jr sd_exit 
 
 ; переходим в папку
 set_download_dir
-		ld a,sd_driver_page
-		call set_page0
+		call init_sd_card
 		call SETROOT
 		LD HL,DIR1
 		CALL FENTRY
@@ -3901,15 +3914,15 @@ set_download_dir
 		JR Z,set_download_dir
 		JP ER3
 
-;---------------------------------------
-sd_exit    ;LD BC,#11AF,A,#05:OUT A
 
-;       LD BC,MEMCONFIG
-;       ld A,%00000001
-;       OUT (c),A
+init_sd_card	call off_int_dma
+		ld a,sd_driver_page
+		jp set_page0
+
+sd_exit		call on_int_dma
 		xor a
 		jp set_page0
-;LD BC,#12AF,A,#0F:OUT A
+
 
 
 ;---------------------------------------
@@ -4101,31 +4114,36 @@ init_zifi
 		out     (c),a           ;Clear RX FIFO
 		call set_Textpage
 		ld hl,cmd_at
-		call zifi_send_echo
+		call zifi_send
 ;ld hl,cmd_uart
 ;		call zifi_send
 		ld hl,cmd_gmr
 		call zifi_send_echo
 		ld hl,cmd_cwmode
-		call zifi_send_echo
+		call zifi_send
 		ld hl,cmd_cwautoconn
-		call zifi_send_echo
+		call zifi_send
 		ld hl,cmd_cipmux
-		call zifi_send_echo
+		call zifi_send
 ;		ld hl,cmd_cwqap	; Disconnect from AP 
 ;		call zifi_send
 ;		ld b,25
 ;		call wait
 ;		call zifi_check_receive_command
 ;	ret
+        	ld hl,wifi_try_connect
+        	ld b,2
+		call zifi_echo
 		ld hl,cmd_cwjap	; AT+CWJAP_CUR . Connect to AP, for current
-		call zifi_send_echo
+		call zifi_send
 
 2		call zifi_check_receive_command
 		ld de,str_ok
         	call buffer_cmp
-        	cp low output_buff+#bf
-        	jr z,2b
+;        	cp low output_buff+#bf
+        	jr nz,2b
+        	ld hl,wifi_connected
+		jp zifi_echo
 ;		ld b,25
 ;		call wait
 ;		ld hl,cmd_cipsta	; is Set IP address of station ?
@@ -4218,7 +4236,7 @@ zifi_init:
 ;; PSB com driver	---------------------------------
 	IF cable_zifi 
 
-	include "_rs232/sockets.mac"
+	include "_psb/sockets.mac"
 psb_start	jp init
 psb_get		jp get
 
@@ -4318,10 +4336,6 @@ get_loop
 	call sockets.recv
 	pop hl
 	or a:jr nz,get_end
-cable_cancel_download   ld a,0
-                        or a
-                        jr nz,get_end
-
 ;	ld a,b:or c:jr z,get_end
 	call view_progress_bar
 	add hl,bc
@@ -4359,7 +4373,16 @@ get_err call get_e
 	inc a
 	ret
 
-
+cable_cancel_download_ex
+		ld sp,#bfff
+		xor a
+		ld (uart.cable_cancel_download+1),a
+		ld (load_sw+1),a
+		close fd
+		call noclose
+		ld hl,status_copy		; clear statusbar gfx
+		call set_ports
+		jp main
 
 ;-----------------------------------------------------------
 
@@ -4369,8 +4392,8 @@ my_addr	db 0,0,0,0:dw 0 ;my ip+port
 server_addr db 93,158,134,3:dw 80
 
 ;code
-	include "_rs232/uart.a80"
-	include "_rs232/sockets.a80"
+	include "_psb/uart.a80"
+	include "_psb/sockets.a80"
 
 ; PSB com driver  ---------------------
 	ENDIF
@@ -4379,6 +4402,7 @@ server_addr db 93,158,134,3:dw 80
 		align 2 
 download_icon	incbin "_spg/download.tga.pix"
 disk_icon	incbin "_spg/disk.tga.pix"
+cancel_icon	incbin "_spg/X.tga.pix"
 
 highlight_colors_buff	ds 80
 link_adreses		ds 256
