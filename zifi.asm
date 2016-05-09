@@ -76,10 +76,13 @@ start
 	ELSE
 		call init_zifi
 	ENDIF
+<<<<<<< HEAD
 		ld a,(mouse_button)
 		cpl
 		and #f0
 		ld (wheel_old+1),a
+=======
+>>>>>>> e4dcd287e400d43f9518e5253ed5922b27da3307
 		call autoupdate		; !!!!!!!!!!!!!
 main
 sites_sw	ld a,0
@@ -128,7 +131,11 @@ do_init_music	ld a,0
 		jp main
 
 selfupdate_msg1		db "ZiFi ver. "
+<<<<<<< HEAD
 cur_version		db '0.720',0,0
+=======
+cur_version		db '0.70',0,0
+>>>>>>> e4dcd287e400d43f9518e5253ed5922b27da3307
 
 autoupdate	ld hl,cur_version
 		ld de,upd_ver
@@ -490,6 +497,7 @@ zifi_get	call wait_frame
 		ld hl,cmd_conn2site	; AT+CIPSTART	- connect to site
 		call zifi_send
 
+<<<<<<< HEAD
 		ld de,str_error
 		call buffer_cmp
 		jr nz,zg_ok
@@ -505,6 +513,16 @@ zifi_get	call wait_frame
 
 zg_ok		ld de,str_ok
         	call buffer_cmp
+=======
+		ld de,str_already_con
+        	call buffer_cmp
+;        	or a
+	     	jr z,1f
+
+		ld de,str_ok
+        	call buffer_cmp
+;        	cp low output_buff+#bf
+>>>>>>> e4dcd287e400d43f9518e5253ed5922b27da3307
 		jr nz,zifi_get
 
 1		ld hl,cmd_cipsend	; AT+CIPSEND=<link ID>,<length>
@@ -512,6 +530,10 @@ zg_ok		ld de,str_ok
 2		call fifo_inir
 		ld de,str_ok
         	call buffer_cmp
+<<<<<<< HEAD
+=======
+;        	cp low output_buff+#bf
+>>>>>>> e4dcd287e400d43f9518e5253ed5922b27da3307
         	jr nz,2b
 1		ld a,(hl)
 		inc hl
@@ -648,9 +670,14 @@ rdipd:  	call    zifi_getchar
 		ret z
 		jr      rdipd
 
+<<<<<<< HEAD
 zifi_getchar:	
 		call zifi_input_fifo_check
 		or a
+=======
+zifi_getchar:	ld      bc,0xc0ef
+		in      a,(c)
+>>>>>>> e4dcd287e400d43f9518e5253ed5922b27da3307
 		jr z,zifi_getchar
 ;		ld      bc,0xc0ef
 ;		in      a,(c)
