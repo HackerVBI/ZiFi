@@ -43,7 +43,7 @@ start_paging_page	equ 1
 analizator_screen_adr	equ #c2e0-4
 progress_bar_screen_adr	equ #0012
 	
-cable_zifi=0		; 1 - Cable version, 0 - wifi version
+cable_zifi=1		; 1 - Cable version, 0 - wifi version
 
 	IF cable_zifi 
 start_download_adress 	equ 0
@@ -76,13 +76,10 @@ start
 	ELSE
 		call init_zifi
 	ENDIF
-<<<<<<< HEAD
 		ld a,(mouse_button)
 		cpl
 		and #f0
 		ld (wheel_old+1),a
-=======
->>>>>>> e4dcd287e400d43f9518e5253ed5922b27da3307
 		call autoupdate		; !!!!!!!!!!!!!
 main
 sites_sw	ld a,0
@@ -131,11 +128,7 @@ do_init_music	ld a,0
 		jp main
 
 selfupdate_msg1		db "ZiFi ver. "
-<<<<<<< HEAD
-cur_version		db '0.720',0,0
-=======
-cur_version		db '0.70',0,0
->>>>>>> e4dcd287e400d43f9518e5253ed5922b27da3307
+cur_version		db '0.722',0,0
 
 autoupdate	ld hl,cur_version
 		ld de,upd_ver
@@ -216,7 +209,7 @@ autoupdate	ld hl,cur_version
 		jp set_download_dir
 
 wifi_connected		db 'Connected succefully',0,0
-wifi_try_connect	db #0d,#0a,'Try connect to SSID',0,0	
+wifi_try_connect	db #0d,#0a,'Try connect to Access point',0,0	
 selfupdate_msg2		db "Check for updates... ",0,0
 checksum_error_mes	db "Checksum error, please restart",0,0
 not_update_message	db "Your ZiFi is up to date.",0,0
@@ -497,7 +490,6 @@ zifi_get	call wait_frame
 		ld hl,cmd_conn2site	; AT+CIPSTART	- connect to site
 		call zifi_send
 
-<<<<<<< HEAD
 		ld de,str_error
 		call buffer_cmp
 		jr nz,zg_ok
@@ -513,16 +505,6 @@ zifi_get	call wait_frame
 
 zg_ok		ld de,str_ok
         	call buffer_cmp
-=======
-		ld de,str_already_con
-        	call buffer_cmp
-;        	or a
-	     	jr z,1f
-
-		ld de,str_ok
-        	call buffer_cmp
-;        	cp low output_buff+#bf
->>>>>>> e4dcd287e400d43f9518e5253ed5922b27da3307
 		jr nz,zifi_get
 
 1		ld hl,cmd_cipsend	; AT+CIPSEND=<link ID>,<length>
@@ -530,10 +512,6 @@ zg_ok		ld de,str_ok
 2		call fifo_inir
 		ld de,str_ok
         	call buffer_cmp
-<<<<<<< HEAD
-=======
-;        	cp low output_buff+#bf
->>>>>>> e4dcd287e400d43f9518e5253ed5922b27da3307
         	jr nz,2b
 1		ld a,(hl)
 		inc hl
@@ -670,14 +648,9 @@ rdipd:  	call    zifi_getchar
 		ret z
 		jr      rdipd
 
-<<<<<<< HEAD
 zifi_getchar:	
 		call zifi_input_fifo_check
 		or a
-=======
-zifi_getchar:	ld      bc,0xc0ef
-		in      a,(c)
->>>>>>> e4dcd287e400d43f9518e5253ed5922b27da3307
 		jr z,zifi_getchar
 ;		ld      bc,0xc0ef
 ;		in      a,(c)
@@ -1672,6 +1645,12 @@ site_list	dw download_site_list,gfx_site_list,music_site_list,press_site_list
 download_site_list	
 		db "Games: vtrdos.ru ",#0d,#0a, "http://ts.retropc.ru/vtrdos.php?t=g",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "Games: prods.tslabs.info - ZX Enhanced",#0d,#0a, "http://prods.tslabs.info/prods_zifi.php?t=2",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db "Demos: zxn.ru",#0d,#0a, "http://zxn.ru/zxn_zifi.php",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db " Classic demos",#0d,#0a, "http://zxn.ru/zxn_zifi.php?t=1",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db " Most liked",#0d,#0a, "http://zxn.ru/zxn_zifi.php?t=2",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db " Most favorited",#0d,#0a, "http://zxn.ru/zxn_zifi.php?t=3",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db " ZX Enhanced",#0d,#0a, "http://zxn.ru/zxn_zifi.php?t=4",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+
 		db "Demo Packs: vtrdos.ru",#0d,#0a, "http://ts.retropc.ru/vtrdos_demo.php?p=1",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "Demos: prods.tslabs.info - ZX Enhanced",#0d,#0a, "http://prods.tslabs.info/prods_zifi.php?t=1",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "Demos: pouet.net - ZX Spectrum",#0d,#0a, "http://ts.retropc.ru/pouet.php?src=pouet_zx",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
@@ -1772,6 +1751,7 @@ sites_list	dec a		; highlight menu gfx
 		xor a
 		ld (sites_sw+1),a
 		ld (click_offset+1),a	; GYOFFSL =0 
+		ld (show_now_play_link+1),a
 		ld a,view_downloaded_list
 		ld (do_after_load+1),a
 		ret
@@ -2362,6 +2342,38 @@ int_ex3		ld hl,0
 pt_play		call set_music_pages_lite
 		call music_player_play
 
+show_now_play_link	ld a,0
+		or a
+		jr z,autoplay
+		
+		ld a,(current_list_page+1)
+mus_link_page	cp 0
+		jr nz,autoplay
+
+show_now_play_cnt
+		ld a,0
+		inc a
+		and 7
+		ld (show_now_play_cnt+1),a
+		jr nz,autoplay
+		call set_Textpage_lite
+		ld a,(link_num+1)
+		ld c,a
+		ld a,(autoplay_num+1)
+		sub c
+		cp #0f
+		jr nc,autoplay
+		add a,a
+		inc a
+		ld h,a
+		ld l,#80
+		ld b,80
+1		ld a,(hl)
+		xor #08
+		ld (hl),a
+		inc l
+		djnz 1b
+
 autoplay	ld a,1
 		or a
 		jr z,pt_play_ex
@@ -2685,13 +2697,18 @@ sum_list_lines	ld a,0
 2		ld (hl),a
 		inc l
 		djnz 2b
-		jr lmb_ex
+		jp lmb_ex
 
 1		ld a,(do_after_load+1)
 		cp play_music
 		jr nz,1f
 		ld a,c
 		ld (autoplay_num+1),a
+		ld a,(current_list_page+1)
+		ld (mus_link_page+1),a
+		ld (show_now_play_link+1),a
+
+
 1		ld a,c
 		call calc_link_num
 		ld a,list_ram_page
@@ -4273,7 +4290,7 @@ zifi_init:
 ;; PSB com driver	---------------------------------
 	IF cable_zifi 
 
-	include "_psb/sockets.mac"
+	include "_rs232/sockets.mac"
 psb_start	jp init
 psb_get		jp get
 
@@ -4429,8 +4446,8 @@ my_addr	db 0,0,0,0:dw 0 ;my ip+port
 server_addr db 93,158,134,3:dw 80
 
 ;code
-	include "_psb/uart.a80"
-	include "_psb/sockets.a80"
+	include "_rs232/uart.a80"
+	include "_rs232/sockets.a80"
 
 ; PSB com driver  ---------------------
 	ENDIF

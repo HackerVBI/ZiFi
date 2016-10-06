@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ic_main.h"
 #include "ic_comm.h"
 #include "ic_cmds.h"
 #include "log.h"
@@ -16,9 +15,8 @@ void usage(void)
 #else
   printf("Usage: ic /dev/ttyUSBx [-b baudrate] [-q] [-q]\n\n");
 #endif
-  printf("Supported baud rates: 230400, 115200 (default), 57600,\n");
-  printf("                      38400, 19200, 9600, 4800, 2400,\n");
-  printf("                      1200\n");
+  printf("Supported baud rates: 115200 (default), 57600, 38400,\n");
+  printf("                      19200, 9600, 4800, 2400, 1200\n");
   printf("Use single -q for quiet mode,\n");
   printf("double -q for complete silence.\n");
 }
@@ -62,7 +60,7 @@ int main(int argc, char *argv[])
 
   if(q<2)
   {
-    printf("ZX-Spectrum Internet Controller Emulator v%s.%s.\n",VER_MAJOR,VER_MINOR);
+    printf("ZX-Spectrum Internet Controller Emulator v0.2.\n");
     printf("Serial device used: %s at %d baud.\n", sname, baud);
   }
 

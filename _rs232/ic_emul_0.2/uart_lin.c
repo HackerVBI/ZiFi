@@ -17,7 +17,6 @@ static tcflag_t get_baud(int baud)
 {
   switch(baud)
   {
-    case 230400: return B230400;
     case 115200: return B115200;
     case 57600:  return B57600;
     case 38400:  return B38400;

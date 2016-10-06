@@ -1,6 +1,6 @@
 @echo off
 
-set TOOLS_PATH=...
+set TOOLS_PATH=D:\proj\zx\floppy-disk-ripper\_tools
 
 set GCC_PATH=%TOOLS_PATH%\mingw\bin;%TOOLS_PATH%\mingw\msys\1.0\bin
 set PATH=%GCC_PATH%;%PATH%

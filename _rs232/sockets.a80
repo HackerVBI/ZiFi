@@ -1,0 +1,306 @@
+
+	module sockets
+
+; command codes
+
+IC_CMD_SOCKET		equ 0x01
+IC_CMD_BIND		equ 0x02
+IC_CMD_CONNECT		equ 0x03
+IC_CMD_LISTEN		equ 0x04
+IC_CMD_ACCEPT		equ 0x05
+IC_CMD_CLOSE		equ 0x06
+
+IC_CMD_GETHOSTBYNAME	equ 0x20
+IC_CMD_GETHOSTBYADDR	equ 0x21
+
+IC_CMD_SEND		equ 0x10
+IC_CMD_RECV		equ 0x11
+IC_CMD_SENDTO		equ 0x18
+IC_CMD_RECVFROM		equ 0x19
+
+IC_CMD_RES_OK		equ 0x00
+IC_CMD_RES_FAIL		equ 0xff
+
+; buffers
+
+cmd_buffer ds 10
+
+
+
+
+;------------------------------------------------------------------------
+
+
+
+
+;socket()
+;>	byte #01
+;	byte address_family
+;	byte type
+;	byte protocol
+;<	byte res (0=ok)
+;<?	byte fd
+
+;IN:
+;l=address_family
+;h=sock_type
+;c=proto
+;OUT:
+;a=fd/INVALID_SOCKET
+socket
+	ex de,hl
+	ld hl,cmd_buffer
+	ld (hl),IC_CMD_SOCKET:inc hl
+	ld (hl),e:inc hl
+	ld (hl),d:inc hl
+	ld (hl),c
+
+	ld hl,cmd_buffer,bc,4
+	call uart.Write
+	call uart.GetChar
+	or a:jr nz,socket_err
+	call uart.GetChar
+	ret
+
+socket_err
+	ld a,INVALID_SOCKET
+	ret
+
+
+
+
+
+;bind()
+;>	byte #02
+;	byte fd
+;	long my_addr
+;	word port
+;<	byte res (0=ok)
+
+;IN:
+;a=fd
+;hl=address of ip and port (db a,b,c,d:dw port)
+;OUT:
+;a=res (0=ok)
+bind
+	ex de,hl
+	ld hl,cmd_buffer
+	ld (hl),IC_CMD_BIND:inc hl
+	ld (hl),a:inc hl
+	ex de,hl
+	ld bc,6:ldir ;copy ip+port
+
+	ld hl,cmd_buffer,c,8
+	call uart.Write
+	call uart.GetChar
+	ret
+
+
+
+
+;connect()
+;>	byte #03
+;	byte fd
+;	long serv_addr
+;	word port
+;<	byte res (0=ok)
+
+;IN:
+;a=fd
+;hl=address of ip and port (db a,b,c,d:dw port)
+;OUT:
+;a=res (0=ok)
+connect
+	ex de,hl
+	ld hl,cmd_buffer
+	ld (hl),IC_CMD_CONNECT:inc hl
+	ld (hl),a:inc hl
+	ex de,hl
+	ld bc,6:ldir ;copy ip+port
+
+	ld hl,cmd_buffer,c,8
+	call uart.Write
+	call uart.GetChar
+	ret
+
+
+
+
+
+;close()
+;>	byte #06
+;	byte fd
+;<	byte res (0=ok)
+
+;IN:
+;a=fd
+;OUT:
+;a=res (0=ok)
+close
+	push af
+	ld a,IC_CMD_CLOSE:call uart.PutChar
+	pop af:call uart.PutChar
+	call uart.GetChar
+	ret
+
+
+
+
+
+;send()
+;>	byte #10
+;	byte fd
+;	word buflen
+;	byte flags
+;<	byte res (0=ok)
+;>?	byte buf[buflen]
+;<?	word realsent (#ffff = error)
+
+;IN:
+;a=fd
+;hl=buf
+;bc=len
+;OUT:
+;a=res (0=ok)
+;bc=reallen
+send
+	ld (send2+1),hl ;save buf addr
+	ld (send1+1),bc ;save data len
+	ld hl,cmd_buffer
+	ld (hl),IC_CMD_SEND:inc hl
+	ld (hl),a:inc hl
+	ld (hl),c:inc hl
+	ld (hl),b:inc hl
+	ld (hl),0 ;flags, skipped now
+
+	ld hl,cmd_buffer,bc,5
+	call uart.Write
+	call uart.GetChar
+	or a:ret nz ;ret if error
+
+send1	ld bc,0
+	ld a,b:or c:jr z,send_skip
+send2	ld hl,0
+	call uart.Write ;put data
+
+send_skip
+	call uart.GetChar
+	push af
+	call uart.GetChar
+	ld b,a
+	pop af
+	ld c,a ;bc=real len
+	xor a
+	ret
+
+
+
+
+
+
+
+;recv()
+;>	byte #11
+;	byte fd
+;	word len
+;	byte flags
+;<	byte res (0=ok)
+;>?	word reallen
+;>??	byte buf[reallen]
+
+;IN:
+;a=fd
+;hl=buf
+;bc=len
+;OUT:
+;a=res (0=ok)
+;bc=reallen
+recv
+	ld (recv1+1),hl ;save buf addr
+	ld hl,cmd_buffer
+	ld (hl),IC_CMD_RECV:inc hl
+	ld (hl),a:inc hl
+	ld (hl),c:inc hl
+	ld (hl),b:inc hl
+	ld (hl),0 ;flags, skipped now
+
+	ld hl,cmd_buffer,bc,5
+	call uart.Write
+	call uart.GetChar
+	or a:ret nz ;ret if error
+
+	call uart.GetChar
+	push af
+	call uart.GetChar
+	ld b,a
+	pop af
+	ld c,a ;bc=real len
+	ld a,b:or c:jr z,recv_skip
+	push bc
+recv1	ld hl,0
+	call uart.Read ;get data
+	pop bc
+recv_skip
+	xor a
+	ret
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;gethostbyname
+;>	byte #20
+;>      word name_len
+;>	ascii hostname
+;<	byte res (0=ok)
+;<?     long ip
+
+;IN:
+;hl=name
+;bc=len
+;OUT:
+;a=res (0=ok)
+;hl:bc=ip
+gethostbyname
+	ld (ghbn1+1),hl ;save name addr
+	ld (ghbn2+1),bc ;save len
+	ld hl,cmd_buffer
+	ld (hl),IC_CMD_GETHOSTBYNAME:inc hl
+	ld (hl),c:inc hl
+	ld (hl),b:inc hl
+
+	ld hl,cmd_buffer,bc,3
+	call uart.Write
+ghbn1	ld hl,0
+ghbn2	ld bc,0
+	call uart.Write
+
+	call uart.GetChar
+	or a:ret nz ;ret if error
+
+	ld hl,cmd_buffer,bc,4
+	call uart.Read ;get data
+
+	ld hl,(cmd_buffer),bc,(cmd_buffer+2)
+	xor a
+	ret
+
+
+
+
+
+
+
+
+	endmodule
+

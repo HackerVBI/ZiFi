@@ -1,0 +1,213 @@
+
+	module uart
+
+
+BASEREG	EQU #F8EF
+
+
+;DLAB=0
+THR	EQU BASEREG+#000	;(W)Transmit Holding Register
+RBR	EQU BASEREG+#000	;(R)Receive Buffer Register
+IER	EQU BASEREG+#100	;(RW)Interrupt Enable Register
+
+EDSSI	EQU %1000	;Enable Modem Status Interrupt
+ELSI	EQU %0100	;Enable Receiver Line Status Interrupt
+ETBEI	EQU %0010	;Enable Transmitter Holding Register Empty Interrupt 
+ERBFI	EQU %0001	;Enable Received Data Available Interrupt
+
+FCR	EQU BASEREG+#200	;(W)FIFO Control Register
+IIR	EQU BASEREG+#200	;(R)Interrupt Identification Register
+
+LCR	EQU BASEREG+#300	;(RW)Line Control Register
+
+DLAB	EQU %10000000	;Divisor Latch Access Bit
+SETBRK	EQU %01000000	;Set Break
+STKPAR	EQU %00100000	;Stick Parity
+EPS	EQU %00010000	;Even Parity Select
+PEN	EQU %00001000	;Parity Enable
+STB	EQU %00000100	;Number of Stop Bits
+WLSB1	EQU %00000010	;Word Length Select #1
+WLSB0	EQU %00000001	;Word Length Select #0
+
+MCR	EQU BASEREG+#400	;(RW)Modem Control Register
+
+RTS	EQU %10		;Request to Send
+DTR	EQU %01		;Data Terminal Ready
+
+LSR	EQU BASEREG+#500	;(RW)Line Status Register
+
+FIFOE	EQU %10000000	;Error in Receiver FIFO
+TEMT	EQU %01000000	;Transmitter Empty
+THRE	EQU %00100000	;Transmitter Holding Register Empty
+BI	EQU %00010000	;Break Interrupt (BI)
+FE	EQU %00001000	;Framing Error (FE)
+PE	EQU %00000100	;Parity Error (PE)
+OE	EQU %00000010	;Overrun Error (OE)
+DR	EQU %00000001	;Data Ready (DR)
+
+
+MSR	EQU BASEREG+#600	;(RW)Modem Status Register
+
+DCD	EQU %10000000	;Data Carrier Detect
+RI	EQU %01000000	;Ring Indicator
+DSR	EQU %00100000	;Data Set Ready
+CTS	EQU %00010000	;Clear To Send
+DDCD	EQU %00001000	;Delta Data Carrier Detect
+TERI	EQU %00000100	;Trailing Edge Ring Indicator
+DDSR	EQU %00000010	;Delta Data Set Ready
+DCTS	EQU %00000001	;Delta Clear To Send
+
+SCR	EQU BASEREG+#700	;(RW)Scratch Register
+
+;DLAB=1
+DLL	EQU BASEREG+#000	;(RW)Divisor Latch LSB
+DLH	EQU BASEREG+#100	;(RW)Divisor Latch MSB
+
+
+;eRS232 for ZX-Evo
+ERS_DR	EQU #00EF
+ERS_SR	EQU #C2EF
+ERS_ST	EQU #C3EF
+ERS_CR	EQU #C7EF
+
+
+;set baud rate
+;hl=divider
+SetBaud
+	ld bc,LCR
+	in a,(c):or DLAB:out (c),a ;set DLAB=1
+
+	ld b,high DLL
+	out (c),l ;low
+	inc b
+	out (c),h ;high
+
+	ld b,high LCR
+	in a,(c):and !DLAB:out (c),a ;set DLAB=0
+
+	ld b,high ERS_CR
+	ld a,#F1
+	out (c),a
+	ld a,#07
+	out (c),a
+	ret
+
+
+;set line control register
+;a=status
+SetLineControl
+	ld bc,LCR
+	out (c),a
+	ret
+
+
+;put char
+;a=char
+PutChar
+	ld bc,ERS_ST
+	exa
+pc1	in f,(c):jr z,pc1 ;wait for room
+        exa
+
+	ld b,high ERS_DR
+	out (c),a
+	ret
+
+
+
+;get char
+;out: a=char
+GetChar
+	ld bc,ERS_SR
+gc1	in f,(c):jr z,gc1 ;wait for data
+
+	ld b,high ERS_DR
+	in a,(c)
+	ret
+
+
+
+;write block
+;hl=buffer addr
+;bc=len
+Write
+        ld      d,b
+        ld      e,c
+ww1     ld      bc,ERS_ST
+        in      c,(c)
+        jr      z,ww1
+        ld      a,d
+        or      a
+        jr      nz,ww2
+        ld      a,e
+        cp      c
+        jr      nc,ww2
+        ld      c,e
+ww2     ex      de,hl
+        xor     a
+        ld      b,a
+        sbc     hl,bc
+        ex      de,hl
+        ld      b,c
+        ld      c,low ERS_DR
+        otir
+        ld	a,d
+	or	e
+	jr	nz,ww1
+	ret
+
+;read block
+;hl=buffer addr
+;bc=len
+Read
+        ld      d,b
+        ld      e,c
+rr1     ld      bc,ERS_SR
+        in      c,(c)
+        jr      z,rr1
+        ld      a,d
+        or      a
+        jr      nz,rr2
+        ld      a,e
+        cp      c
+        jr      nc,rr2
+        ld      c,e
+rr2     ex      de,hl
+        xor     a
+        ld      b,a
+        sbc     hl,bc
+        ex      de,hl
+        ld      b,c
+        ld      c,low ERS_DR
+        inir
+cable_cancel_download   ld a,0
+                        or a
+                        jp nz,cable_cancel_download_ex
+        ld	a,d
+	or	e
+	jr	nz,rr1
+	ret
+
+;;read block fast
+;;hl=buffer addr
+;;bc=len
+;Readf	push hl:exx:pop hl
+;	ld de,high LSR+256*high RBR ;+256
+;
+;	ld c,low LSR
+;r0_	dup 16
+;	ld b,e
+;	in a,(c):and DR:jr z,$-4 ;wait
+;
+;	ld b,d:ini
+;	edup
+;	exx
+;	dup 16
+;	dec bc
+;	edup
+;	ld a,b:or c
+;	exx
+;	jp nz,r0
+;	ret
+
+	endmodule
