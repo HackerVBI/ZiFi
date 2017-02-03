@@ -45,12 +45,6 @@ progress_bar_screen_adr	equ #0012
 	
 cable_zifi=1		; 1 - Cable version, 0 - wifi version
 
-	IF cable_zifi 
-start_download_adress 	equ 0
-	ELSE 
-start_download_adress	equ #0001
-	ENDIF
-
 
 		org #8000
 start
@@ -398,7 +392,8 @@ modem_load_file
 		ld (music_sw+1),a
 		ld (is_music_play+1),a
 		ld (do_init_music+1),a
-1
+
+1		
 ; show link
 ;		ld hl,cmd_conn2site_adr
 ;		ld de,#1e00		; show link
@@ -425,6 +420,21 @@ load_ram_page	ld a,0
 		ld b,4
 		call view_progress_bar
 
+; добавляем строку поиска первой и устанавливаем адрес загрузки после неё
+		ld hl,#0000			; main download adress
+
+		ld a,(do_after_load+1)
+		cp view_downloaded_list
+		jr nz,1f
+		ld a,download_page
+		call set_page0_lite
+		ld de,0
+		ld bc,list_search_db_end-list_search_db
+		ld hl,list_search_db
+		ldir
+		ex de,hl			; download adress for lists. after "Search:"
+1		ld (zipd_adr+1),hl
+
 	IF cable_zifi 
 		ld a,(load_ram_page+1)
 		ld hl,modem_command
@@ -449,32 +459,14 @@ load_ram_page	ld a,0
 		call set_ports
 		xor a
 		ld (load_sw+1),a
-		call find_0d0a
+		ld hl,#4000
 		ld (ix+thread.adress),hl
-		push hl		
-		ld de,#4000+start_download_adress
-		or a
-		sbc hl,de
-		ex de,hl
-		ld hl,(ix+thread.full_len)
-		sbc hl,de
-		ld (ix+thread.full_len),hl	; hl - low 16bit lenght
-		pop hl
 		ld a,(do_after_load+1)
 		cp view_downloaded_list
 		ret nz
-; добавляем строку поиска первой и переставляем адрес загрузки (!!!)
-		ld bc,list_search_db_end-list_search_db
-		push bc
-		or a
-		sbc hl,bc
-		ld (ix+thread.adress),hl
-		ex de,hl
-		ld hl,list_search_db
-		pop bc
-		ldir
+
 		call off_int_dma
-		ld hl,link_page_copy
+		ld hl,link_page_copy		; copy donwloaded list to list_page
 		call set_ports
 		jp on_int_dma
 
@@ -521,10 +513,6 @@ zg_ok		ld de,str_ok
 		jr nz,1b
 
 ; send http request
-;		ld hl,#c000
-;		ld (zipd_adr+1),hl
-
-
 		ld hl,modem_command
 		call zifi_send_raw
 1
@@ -534,48 +522,34 @@ zg_ok		ld de,str_ok
 		call zifi_getchar
 		cp "K"
 		jr nz,1b		
-/*
-1		call fifo_inir
-		ld hl,output_buff
-o1		ld a,l
-		cp low output_buff+#bf
-		jr z,1b
-		ld a,(hl)
-		inc l
-		cp "O"
-		jr nz,o1
-		ld a,(hl)
-		cp "K"
-		jr nz,o1
-		ld a,2
-		out (#fe),a
-*/
 
-		ld hl,start_download_adress		; load in page0 - page1
-		ld (zipd_adr+1),hl
-read_all_ipds				; call read_idp_packet
-
-reread_ipd	;ld a,3
-;		out (#fe),a
-		ld e,#ff
-		ld hl,output_buff
-		call rdipd
-;		xor a
-;		out (#fe),a
-		ld de,CLOSED
-		call buffer_cmp
-;		or a			; CLOSED, exit
-		jp z,zifi_read_ipd_ex
-		ld de,str_ipd
-		call buffer_cmp
-;		cp low output_buff+#bf
-		jr nz,reread_ipd
-		ex de,hl
-		call count_ipd_lenght		; in HL - lenght of ipd packet
+// receive header
+first_ipd
+		call reread_ipd
+2
+		call read_fifo_char
+		dec hl
+		cp #0d
+		jr nz,2b
+		call read_fifo_char
+		dec hl
+		cp #0a
+		jr nz,2b		
+		call read_fifo_char
+		dec hl
+		cp #0d
+		jr nz,2b
+		call read_fifo_char
+		dec hl
+		cp #0a
+		jr nz,2b
+// header skipped
 		ld (zipd_full_len+1),hl
+		jr zipd_adr
 
+// receive data
+read_all_ipds	call reread_ipd
 zipd_adr	ld hl,#0000
-
 zipd_full_len	ld de,0			; ipd len
 p231		ld bc,zifi_input_fifo_status
 1		in a,(c)
@@ -630,13 +604,40 @@ readed_len_high	ld a,0
 		call view_progress_bar
 	        jp read_all_ipds
 
+
+read_fifo_char	ld bc,zifi_input_fifo_status	; ждём прихода данных в фифо
+3		in a,(c)
+		jr z,3b				; 0 - input FIFO is empty,
+		ld b,0
+		in a,(c)
+		ret
+
+reread_ipd	;ld a,3
+;		out (#fe),a
+		ld e,#ff
+		ld hl,output_buff
+		call rdipd
+;		xor a
+;		out (#fe),a
+		ld de,CLOSED
+		call buffer_cmp
+;		or a			; CLOSED, exit
+		jp z,zifi_read_ipd_ex
+		ld de,str_ipd
+		call buffer_cmp
+;		cp low output_buff+#bf
+		jr nz,reread_ipd
+		ex de,hl
+		call count_ipd_lenght		; in HL - lenght of ipd packet
+		ld (zipd_full_len+1),hl
+		ret
+
 zifi_read_ipd_ex	
+		pop af
 		ld a,(readed_len_high+1)
 		ld c,a
 		ld hl,(readed_len_low+1)
 		ret
-
-
 
 rdipd:  	call    zifi_getchar
 		jr      z,rdipd
@@ -4483,6 +4484,8 @@ music_setup_vars	equ music_player+#55
 music_players_end
 		SAVEBIN "_spg/ptplay.bin",music_player, music_players_end-music_player
 */
+
+	LABELSLIST "_spg/zifi.l"
 
 	IF cable_zifi 
 		SAVEBIN "_spg/zifi_rs.bin",start, end-start
