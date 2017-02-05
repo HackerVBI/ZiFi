@@ -33,6 +33,7 @@ press_sites		equ 4
 highlight_size		equ 1408
 search_textpage_adr	equ #0108
 		
+do_nothing		equ 0
 view_downloaded_list	equ 1
 view_text		equ 2
 save_file		equ 3
@@ -122,7 +123,7 @@ do_init_music	ld a,0
 		jp main
 
 selfupdate_msg1		db "ZiFi ver. "
-cur_version		db '0.722',0,0
+cur_version		db '0.724',0,0
 
 autoupdate	ld hl,cur_version
 		ld de,upd_ver
@@ -142,6 +143,8 @@ autoupdate	ld hl,cur_version
 		ld a,download_page
 		ld (load_ram_page+1),a
 		call modem_load_file
+		ld a,download_page
+		call set_page1
 		ld de,not_update_message
 		ld hl,(ix+thread.adress)
 		ld a,"Y"
@@ -449,8 +452,13 @@ load_ram_page	ld a,0
 		ld a,c
 		ld (ix+thread.full_len_high),a	; bc - high 16bit lenght
 		ld (ix+thread.full_len),hl	; hl - low 16bit lenght
-;		ld a,1		; thread num -1
-		xor a
+		or h
+		or l
+		jr nz,1f
+;		ld a,do_nothing
+		ld (do_after_load+1),a		; do NOTHING
+
+1		xor a
 		ld (ix+thread.num),a
 		ld a,(load_ram_page+1)
 		ld (ix+thread.page),a
@@ -544,6 +552,9 @@ first_ipd
 		cp #0a
 		jr nz,2b
 // header skipped
+		ld a,h
+		or l
+		jr z,read_all_ipds
 		ld (zipd_full_len+1),hl
 		jr zipd_adr
 
@@ -1646,7 +1657,7 @@ site_list	dw download_site_list,gfx_site_list,music_site_list,press_site_list
 download_site_list	
 		db "Games: vtrdos.ru ",#0d,#0a, "http://ts.retropc.ru/vtrdos.php?t=g",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "Games: prods.tslabs.info - ZX Enhanced",#0d,#0a, "http://prods.tslabs.info/prods_zifi.php?t=2",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
-		db "Demos: zxn.ru",#0d,#0a, "http://zxn.ru/zxn_zifi.php",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db "Demos: zxn.ru",#0d,#0a, "http://zxn.ru/zxn_zifi.php?t=0",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db " Classic demos",#0d,#0a, "http://zxn.ru/zxn_zifi.php?t=1",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db " Most liked",#0d,#0a, "http://zxn.ru/zxn_zifi.php?t=2",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db " Most favorited",#0d,#0a, "http://zxn.ru/zxn_zifi.php?t=3",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
