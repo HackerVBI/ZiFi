@@ -1,9 +1,5 @@
 @echo off
 
-spgbld.exe -b spgbld.ini zifi.spg
-spgbld.exe -b spgbld_rs.ini zifi_rs.spg
-
-
 mkdir ZIFI
 del /s /q ZIFI\*.*
 xcopy /Y zifi_rs.spg ZIFI\
@@ -20,3 +16,5 @@ robimg.exe -p=%IName% -C="ZIFI",\ZIFI
 
 del /s /q ZIFI\*.*
 rmdir /s /q "ZIFI"
+
+

@@ -44,20 +44,16 @@ start_paging_page	equ 1
 analizator_screen_adr	equ #c2e0-4
 progress_bar_screen_adr	equ #0012
 	
-cable_zifi=1		; 1 - Cable version, 0 - wifi version
+cable_zifi=0		; 1 - Cable version, 0 - wifi version
 
 
 		org #8000
 start
+//		call read_rtc
 		ld sp,#bfff
 		call all_init
  		call set_256c_mode		
 		call sd_init
-
-	IF !cable_zifi 
-		call load_ini
-		call parse_ini
-	ENDIF
 		ei
  		ld b,60
  		call wait
@@ -65,7 +61,10 @@ start
 		ld (#beff),hl
  		call gfx_init
 		call set_text_colors
-
+	IF !cable_zifi 
+		call load_ini
+		
+	ENDIF
 	IF cable_zifi 
 		call psb_start
 	ELSE
@@ -123,7 +122,7 @@ do_init_music	ld a,0
 		jp main
 
 selfupdate_msg1		db "ZiFi ver. "
-cur_version		db '0.724',0,0
+cur_version		db '0.725',0,0
 
 autoupdate	ld hl,cur_version
 		ld de,upd_ver
@@ -145,8 +144,17 @@ autoupdate	ld hl,cur_version
 		call modem_load_file
 		ld a,download_page
 		call set_page1
-		ld de,not_update_message
 		ld hl,(ix+thread.adress)
+		push hl
+		ld bc,4		; get date from server
+		add hl,bc	
+		ld de,DIR_date+1
+		ld c,10
+		ldir
+		call read_rtc
+		pop hl
+
+		ld de,not_update_message
 		ld a,"Y"
 		cp (hl)
 		jr nz,4f
@@ -156,7 +164,7 @@ autoupdate	ld hl,cur_version
 		jr z,3f
 		dec hl
 4		push hl
-		ld bc,4
+		ld bc,4+14	; CRC16 +date
 		add hl,bc	; first 4 chars must be CRC16
 		ld (ix+thread.adress),hl
 		ex de,hl
@@ -183,7 +191,7 @@ autoupdate	ld hl,cur_version
 
 2		call init_sd_card
 		CALL SETROOT; возвращаемся в коневой
-		LD HL,DIR2
+		LD HL,DIR_zifi
 		CALL FENTRY
 		CALL SETDIR
 
@@ -3806,9 +3814,9 @@ sw_int_dma	ld (save_mode+1),a
 
 
 save_downloaded_file	; ld de,10884	; file lenght 
-		call off_int_dma
 		ld de,disk_icon
 		call set_icon
+		call init_sd_card
 		ld ix,read_threads
 		ld de,(ix+thread.full_len)
 		ld hl,FILE+1
@@ -3823,7 +3831,7 @@ save_downloaded_file	; ld de,10884	; file lenght
 		ex de,hl
 		ld d,0
 		ld e,a
-		call DEL512  ;i:[DE,HL]/512 	
+		call DEL512  ;расчёт длины в секторах: i:[DE,HL]/512 	
 /*
 		ld a,e
 		or a
@@ -3837,7 +3845,7 @@ save_downloaded_file	; ld de,10884	; file lenght
 */
 		push hl
 ;Create File (flag,size,name,0):
-		call init_sd_card
+
 		LD HL,FILE
 		CALL MKFILE
 		pop bc		; bc= num sectors
@@ -3932,17 +3940,27 @@ ADD4B   ADD HL,BC:RET NC:INC DE
 ; читаем настройки:
 load_ini	
 		call init_sd_card
-		LD HL,DIR2
+		LD HL,DIR_zifi
 		CALL FENTRY
 		CALL SETDIR
 		LD HL,FILE_INI
 		CALL FENTRY
+		JP Z,ini_not_found
 		LD C,download_page	; page ini
 		LD HL,#0000
 		LD B,#32
 		CALL LOAD512
 		CALL SETROOT; возвращаемся в коневой
-		jp sd_exit
+		call  sd_exit
+		jp parse_ini
+
+ini_not_found
+		call set_Textpage
+		ld hl,ini_not_found_msg
+		ld b,1
+		call zifi_echo
+		jr $
+ini_not_found_msg	db ' Error: zifi.ini not found',0,0
 /*
 читаем настройки:
         LD HL,DIR_INI
@@ -3964,32 +3982,122 @@ load_ini
 ;LD HL,#1000,C,#02 ; читаем файл (1 блок, 512 байт)
 ;LD B,1:CALL LOAD512
 
-current_dir	call SETDIR
-		
-		jr sd_exit 
-
 ; переходим в папку
 set_download_dir
 		call init_sd_card
 		call SETROOT
-		LD HL,DIR1
+		LD HL,DIR_download
 		CALL FENTRY
-		jp nz,current_dir; Set DIR found by FENTRY active
-		LD HL,DIR1+1
+		jr nz,current_dir	; Set DIR found by FENTRY active
+		LD HL,DIR_download+1
 		CALL MKDIR
 		JR Z,set_download_dir
 		JP ER3
 
+current_dir	call SETDIR		; we in "download" dir
+		LD HL,DIR_date		; check current date dir
+		CALL FENTRY
+		jr nz,sd_exit_date		; Set DIR found by FENTRY active
+		LD HL,DIR_date+1
+		CALL MKDIR
+		JR Z,current_dir
+		jr sd_exit 
 
 init_sd_card	call off_int_dma
 		ld a,sd_driver_page
 		jp set_page0
 
+sd_exit_date	call SETDIR
 sd_exit		call on_int_dma
 		xor a
 		jp set_page0
 
 
+//		db "Your"
+//		DB "00_00_0000" ; date
+//		DB "0000"	; time
+
+read_rtc
+		ld a,#80
+		ld bc,#eff7
+		out (c),a
+
+	; register b
+		ld a,#0b
+		ld b,#df
+		out (c),a
+		ld a,#82
+		ld b,#bf
+		out (c),a
+
+		ld hl,#4000+4	; startup downloaded time 
+	; date of the month
+		ld a,#07
+		ld b,#df
+		out (c),a
+		ld b,#bf
+		call code_time_rtc
+		out (c),a
+		inc hl		; "_"
+	; month
+		ld a,#08
+		ld b,#df
+		out (c),a
+		ld b,#bf
+		call code_time_rtc
+		out (c),a
+		inc hl		; "_"
+	; year
+		inc hl		; 2
+		inc hl		; 0
+		ld a,#09
+		ld b,#df
+		out (c),a
+		ld b,#bf
+		call code_time_rtc
+		out (c),a
+	; hours		
+		ld a,#04
+		ld b,#df
+		out (c),a
+		ld b,#bf
+		call code_time_rtc
+		out (c),a
+
+	; minutes		
+		ld a,#02
+		ld b,#df
+		out (c),a
+		ld b,#bf
+		call code_time_rtc
+		out (c),a
+
+	; register b
+		ld a,#0b
+		ld b,#df
+		out (c),a
+		ld a,#02
+		ld b,#bf
+		out (c),a
+
+		ld a,#00
+		ld bc,#eff7
+		out (c),a
+		ret
+
+code_time_rtc	ld a,(hl)
+		and #0f
+		rla
+		rla
+		rla
+		rla
+		ld e,a
+		inc hl
+		ld a,(hl)
+		and #0f
+		or e
+		inc hl
+		ret
 
 ;---------------------------------------
 /*
@@ -4057,11 +4165,14 @@ update_file	DB #00; 0 - file, 1 - DIR
 		DB "zifi.spg",0		
 	endif
 
-DIR1		DB #10
+DIR_download	DB #10
 		DB "downloads",0
 
-DIR2		DB #10
+DIR_zifi	DB #10
 		DB "zifi",0
+
+DIR_date		DB #10
+		DB "00_00_0000",0
 
 ;---------------------------------------
 CORE    EQU #2002
@@ -4169,16 +4280,16 @@ read_threads	ds 6*5
 
 
 init_zifi
+		call set_Textpage
 		ld      bc,0xc7ef
 		ld      de,0xfff1
 		out     (c),e           ;Set API mode 1
 		out     (c),d           ;Get Version
 		in      a,(c)
 		cp      0xff
-;		jp      z,nozifi
+		jp      z,nozifi
 		ld      a,0x01
 		out     (c),a           ;Clear RX FIFO
-		call set_Textpage
 		ld hl,cmd_at
 		call zifi_send
 ;ld hl,cmd_uart
@@ -4215,7 +4326,7 @@ init_zifi
 ;		ld hl,cmd_cipsta	; is Set IP address of station ?
 ;		call zifi_send
 ;		call zifi_check_receive_command
-		ret
+;		ret
 /*
 		ld b,25
 		call wait
@@ -4225,7 +4336,14 @@ init_zifi
 zifi_error
 		ret
 
-
+nozifi		ld hl,conf_not_found_msg
+		ld b,1
+		call zifi_echo
+		jr $
+conf_not_found_msg
+		db "Error: Please update TS Conf.",0,0
+zifi_not_found_msg
+		db "Error: ZiFi ESP8266 module not found.",0,0
 /*
 Address         Mode Name Description
 0x00EF..0xBFEF  R    DR   Data register (ZIFI or RS232).
