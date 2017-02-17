@@ -43,13 +43,13 @@ view_gfx		equ 5
 start_paging_page	equ 1
 analizator_screen_adr	equ #c2e0-4
 progress_bar_screen_adr	equ #0012
-	
+
 cable_zifi=0		; 1 - Cable version, 0 - wifi version
 
 
 		org #8000
 start
-//		call read_rtc
+//		call write_rtc
 		ld sp,#bfff
 		call all_init
  		call set_256c_mode		
@@ -61,10 +61,7 @@ start
 		ld (#beff),hl
  		call gfx_init
 		call set_text_colors
-	IF !cable_zifi 
 		call load_ini
-		
-	ENDIF
 	IF cable_zifi 
 		call psb_start
 	ELSE
@@ -122,7 +119,7 @@ do_init_music	ld a,0
 		jp main
 
 selfupdate_msg1		db "ZiFi ver. "
-cur_version		db '0.725',0,0
+cur_version		db '0.726',0,0
 
 autoupdate	ld hl,cur_version
 		ld de,upd_ver
@@ -144,14 +141,17 @@ autoupdate	ld hl,cur_version
 		call modem_load_file
 		ld a,download_page
 		call set_page1
+
 		ld hl,(ix+thread.adress)
 		push hl
 		ld bc,4		; get date from server
 		add hl,bc	
 		ld de,DIR_date+1
 		ld c,10
-		ldir
-		call read_rtc
+		ldir		; copy "date" folder name from server 
+update_rtc_sw	ld a,0		; need to write time to rtc?
+		or a
+		call nz,write_rtc
 		pop hl
 
 		ld de,not_update_message
@@ -1576,54 +1576,6 @@ find_copy_char	ld a,(hl)
 create_link_suffix
 		db    #22,",80",13,10,0
 
-parse_ini
-		ld a,download_page
-		call set_page3
-		ld hl,#c000
-		ld de,ini_db
-		ld b,5
-		call cp_ini
-		ld (ssid_ini+1),hl
-2		ld a,(hl)
-		cp #0d+1
-		jr c,1f
-		inc hl
-		jr 2b
-1		inc hl
-		ld a,(hl)
-		cp #0d+1
-		jr nc,1f
-		inc hl
-1		ld b,9
-		call cp_ini
-		ld (pass_ini+1),hl
-ssid_ini	ld hl,0
-		ld de,cmd_cwjap_pass
-		call copy_ini
-		ex de,hl
-		ld bc,#222c
-		ld (hl),b
-		inc hl
-		ld (hl),c
-		inc hl
-		ld (hl),b
-		inc hl
-		ex de,hl
-pass_ini	ld hl,0
-		call copy_ini
-		ex de,hl
-		ld (hl),#22
-		inc hl
-		ld (hl),13
-		inc hl
-		ld (hl),10
-		inc hl
-		ld (hl),13
-		inc hl
-		ld (hl),10
-		inc hl
-		ld (hl),0
-		ret
 
 copy_ini	ld a,(hl)
 		cp #0d+1
@@ -1634,30 +1586,35 @@ copy_ini	ld a,(hl)
 		jr copy_ini
 
 cp_ini		ld a,(de)
+		or a
+		jr z,cp_ini1
 		cp (hl)
 		jr nz,error_ini
 		inc hl
 		inc de
-		djnz cp_ini
+		jr cp_ini
+
+cp_ini1		inc de
 cp_ini2		ld a,(hl)
 		cp #20
 		ret nz
 		inc hl
 		jr cp_ini2
 
+
 error_ini	ld a,2
 		out (#fe),a
 		pop hl
+		call set_Textpage
 		ld hl,error_ini_text
-		ld de,#4000
-		ld bc,#200
-		ldir
-		call text_view_in
+		ld b,1
+		call zifi_echo
 		ei 
 		jr $
 
-ini_db		db "SSID:"
-		db "password:"
+ini_db		db "SSID:",0
+		db "password:",0
+ini_db_time	db "time:",0
 error_ini_text	db "Error parsing ini file",0
 
 site_list	dw download_site_list,gfx_site_list,music_site_list,press_site_list
@@ -3814,9 +3771,9 @@ sw_int_dma	ld (save_mode+1),a
 
 
 save_downloaded_file	; ld de,10884	; file lenght 
+		call init_sd_card
 		ld de,disk_icon
 		call set_icon
-		call init_sd_card
 		ld ix,read_threads
 		ld de,(ix+thread.full_len)
 		ld hl,FILE+1
@@ -3951,9 +3908,115 @@ load_ini
 		LD B,#32
 		CALL LOAD512
 		CALL SETROOT; возвращаемся в коневой
-		call  sd_exit
-		jp parse_ini
+		call sd_exit
 
+
+parse_ini	ld a,download_page
+		call set_page3
+		ld hl,#c000
+	IF !cable_zifi 
+		ld de,ini_db
+		call cp_ini
+		push hl
+		call find_next_line
+		call cp_ini
+		ld (pass_ini+1),hl
+ssid_ini	pop hl
+		ld de,cmd_cwjap_pass
+		call copy_ini
+		ex de,hl
+		ld bc,#222c
+		ld (hl),b
+		inc hl
+		ld (hl),c
+		inc hl
+		ld (hl),b
+		inc hl
+		ex de,hl
+pass_ini	ld hl,0
+		call copy_ini
+		ex de,hl
+		ld (hl),#22
+		inc hl
+		ld (hl),13
+		inc hl
+		ld (hl),10
+		inc hl
+		ld (hl),13
+		inc hl
+		ld (hl),10
+		inc hl
+		ld (hl),0
+		ex de,hl
+		call find_next_line
+	ENDIF
+	IF cable_zifi 
+2		ld a,(hl)
+		cp "t"
+		jr z,1f
+		inc hl
+		jr 2b
+1		
+	ENDIF
+		ld de,ini_db_time
+		call cp_ini
+		cp "n"
+		ret z		; time will not updated
+
+		ld (update_rtc_sw+1),a	; set on update time
+		cp "0"
+		jr c,1f
+		cp "9"
+		jr c,2f
+1		cp "+"		; set +/- gmt time
+		jr nz,gmt_minus
+		inc hl
+2		call get_gmt
+		ld (gmt_time+1),a
+		ret
+
+gmt_minus	cp "-"
+		ret nz
+		inc hl
+		call get_gmt
+		neg
+		ld (gmt_time+1),a
+		ret
+
+get_gmt		ld b,(hl)
+		inc hl
+		ld a,(hl)
+		cp #2f
+		jr c,1f
+		and #0f
+		add a
+		ld c,a
+		add a
+		add a
+		add c
+		ld c,a
+		ld a,b
+		and #0f
+		add c
+		ret
+
+1		ld a,b
+		and #0f
+		ret
+
+find_next_line
+		ld a,(hl)
+		cp #0d+1
+		jr c,1f
+		inc hl
+		jr find_next_line
+
+1		inc hl
+		ld a,(hl)
+		cp #0d+1
+		ret nc
+		inc hl
+		ret
 ini_not_found
 		call set_Textpage
 		ld hl,ini_not_found_msg
@@ -4017,7 +4080,7 @@ sd_exit		call on_int_dma
 //		DB "00_00_0000" ; date
 //		DB "0000"	; time
 
-read_rtc
+write_rtc
 		ld a,#80
 		ld bc,#eff7
 		out (c),a
@@ -4061,7 +4124,46 @@ read_rtc
 		ld b,#df
 		out (c),a
 		ld b,#bf
-		call code_time_rtc
+		
+		ld a,(hl)
+		and #0f
+		add a
+		ld e,a
+		add a
+		add a
+		add e
+		ld e,a
+		inc hl
+		ld a,(hl)
+		and #0f
+		add e
+		inc hl
+		ld e,0		; calculate time with gmt offset, signed (-2 = #fe, +2 = 2 )
+gmt_time	add 0
+		jp m,3f
+		cp 24
+		jr c,1f
+		jr nc,1f
+		add 24
+		jr 2f
+
+3		add 24
+1		cp 24
+		jr c,2f
+		sub 24
+2		
+4		cp 10
+		jr c,1f
+		sub 10
+		inc e
+		jr 4b
+
+1		or a
+		rl e
+		rl e
+		rl e
+		rl e
+		or e
 		out (c),a
 
 	; minutes		
