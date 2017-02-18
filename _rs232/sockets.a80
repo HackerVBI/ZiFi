@@ -235,17 +235,43 @@ recv
 	ld b,a
 	pop af
 	ld c,a ;bc=real len
-	ld a,b:or c:jr z,recv_skip
+	ld a,b
+	or c
+	jr z,recv_skip
 	push bc
+recv_skip_header	ld a,0
+		or a
+		jr nz,recv1
+		push bc
+		pop hl
+; skip http header
+2		call uart.GetChar
+		dec hl
+		cp #0d
+		jr nz,2b
+		call uart.GetChar
+		dec hl
+		cp #0a
+		jr nz,2b		
+		call uart.GetChar
+		dec hl
+		cp #0d
+		jr nz,2b
+		call uart.GetChar
+		dec hl
+		cp #0a
+		jr nz,2b
+		ld b,h
+		ld c,l
+		ld (recv_skip_header+1),a
+		pop hl
+		push bc
 recv1	ld hl,0
 	call uart.Read ;get data
 	pop bc
 recv_skip
 	xor a
 	ret
-
-
-
 
 
 

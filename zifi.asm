@@ -44,7 +44,7 @@ start_paging_page	equ 1
 analizator_screen_adr	equ #c2e0-4
 progress_bar_screen_adr	equ #0012
 
-cable_zifi=0		; 1 - Cable version, 0 - wifi version
+cable_zifi=1		; 1 - Cable version, 0 - wifi version
 
 
 		org #8000
@@ -119,7 +119,7 @@ do_init_music	ld a,0
 		jp main
 
 selfupdate_msg1		db "ZiFi ver. "
-cur_version		db '0.726',0,0
+cur_version		db '0.727',0,0
 
 autoupdate	ld hl,cur_version
 		ld de,upd_ver
@@ -475,8 +475,22 @@ load_ram_page	ld a,0
 		call set_ports
 		xor a
 		ld (load_sw+1),a
-		ld hl,#4000
+/*	IF !cable_zifi	*/
+		ld hl,get_buffer
+		ld (ix+thread.adress),hl	; Wifi adress without headers
+/*
+	ELSE
+		call find_0d0a			; Fined header end and skip for Cable ver
 		ld (ix+thread.adress),hl
+		ld de,get_buffer
+		or a
+		sbc hl,de
+		ex de,hl
+		ld hl,(ix+thread.full_len)
+		sbc hl,de
+		ld (ix+thread.full_len),hl	; hl - low 16bit lenght
+	ENDIF
+*/
 		ld a,(do_after_load+1)
 		cp view_downloaded_list
 		ret nz
@@ -4093,7 +4107,7 @@ write_rtc
 		ld b,#bf
 		out (c),a
 
-		ld hl,#4000+4	; startup downloaded time 
+		ld hl,get_buffer+4	; startup downloaded time 
 	; date of the month
 		ld a,#07
 		ld b,#df
@@ -4602,14 +4616,19 @@ g3	ld de,(GET_HDR):or a:sbc hl,de:ld (GET_HDR_LEN),hl
 
 	;connect to host
 	connect fd,server_addr
-	or a:jr nz,get_err
+	or a:jp nz,get_err
 
 	;send HTTP request
 	send fd,(GET_HDR),(GET_HDR_LEN)
 	or a:jr nz,get_err
 
 	ld ix,0 ;full pages got
-	ld hl,#c001		; 		----------- !!!!!!!!!! align 2 fix ------------------
+	ld hl,(zipd_adr+1)		; #c000 		----------- !!!!!!!!!! align 2 fix ------------------
+	set 7,h
+	set 6,h
+	xor a
+	ld (sockets.recv_skip_header+1),a
+
 get_loop
 	ld a,(GET_PAGE)
 	call set_page3
