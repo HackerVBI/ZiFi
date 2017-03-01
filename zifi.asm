@@ -44,7 +44,7 @@ start_paging_page	equ 1
 analizator_screen_adr	equ #c2e0-4
 progress_bar_screen_adr	equ #0012
 
-cable_zifi=1		; 1 - Cable version, 0 - wifi version
+cable_zifi=0		; 1 - Cable version, 0 - wifi version
 
 
 		org #8000
@@ -119,7 +119,7 @@ do_init_music	ld a,0
 		jp main
 
 selfupdate_msg1		db "ZiFi ver. "
-cur_version		db '0.727',0,0
+cur_version		db '0.730',0,0
 
 autoupdate	ld hl,cur_version
 		ld de,upd_ver
@@ -1056,6 +1056,8 @@ view_scr_image
 		jp show_gfx
 
 
+; ----- SXG viewer -------------
+
 view_sxg_image	call init_view_image
 		ld hl,(ix+thread.adress)
 		ld de,5
@@ -1068,13 +1070,20 @@ view_sxg_image	call init_view_image
 		ld (#c000),hl
 		ld hl,clr_gfx_screen
 		call set_ports
+		ld b,#28
+		ld a,#ff
+		out (c),a
+		ld b,#27
+		ld a,%00000100
+		OUT (C),a
+		call dma_stats
 		pop hl
 		inc hl
 		inc hl	; #4007
 ; 		push	af
 ;		ld	(clrColor+1),a
 ;		ld	a,(hl)	; Тип упаковки данных (#00 - не пакованы)
-		ld a,(hl)		; Video mode
+		ld a,(hl)		; Video color mode
 		ld c,a
 		inc hl
 		cp 2
@@ -1117,6 +1126,27 @@ view_sxg_image	call init_view_image
 		ld	d,(hl)
 		inc	hl
 
+		ld a,VID_360X288
+		or c
+		ld (gfx_vmode+1),a
+		push hl
+		push bc
+		ld hl,360
+		or a
+		sbc hl,de
+		srl l
+		xor a
+		sub l
+		or a
+		jr z,1f
+		ld bc,GXOFFSL
+		out (c),a
+		inc b
+		ld a,1
+		out (c),a
+1		pop bc
+		pop hl
+/*
 ; 	#168 - 360; #140 - 320; #100- 256
 		ld a,#68
 		cp e
@@ -1131,7 +1161,7 @@ view_sxg_image	call init_view_image
 		ld a,VID_320X240	; standart resolution
 2		or c
 		ld (gfx_vmode+1),a
-
+*/
 		srl d
 		rr e
 color_type	ld a,0
@@ -1147,6 +1177,21 @@ color_type	ld a,0
 		inc	hl
 		ld	d,(hl)
 		inc	hl
+		push hl
+		ld hl,288
+		or a
+		sbc hl,de
+		srl l
+		xor a
+		sub l
+		or a
+		jr z,1f
+		ld bc,GYOFFSL
+		out (c),a
+		inc b
+		ld a,1
+		out (c),a
+1		pop hl
 		bit 0,d
 		jr z,1f
 		ld a,#ff
@@ -1214,11 +1259,6 @@ gfx_border	ld a,0
 		ld b,high VPAGE
 		out (c),a
 		
-		xor a
-		ld b,high GYOFFSL
-		out (c),a
-		inc b
-		out (c),a
 		call pause
 		LD BC,#FADF
 3		IN A,(C)     ;читаем порт кнопок
@@ -1228,6 +1268,17 @@ gfx_border	ld a,0
 		call pause
 		ld hl,int_main
 		ld (#beff),hl
+
+		xor a
+		ld bc,GXOFFSL
+		out (c),a
+		inc b
+		out (c),a
+		inc b
+		out (c),a
+		inc b
+		out (c),a
+
 		ld b,high TSCONFIG
 		ld a,TSU_SEN
 		out (c),a
@@ -1654,6 +1705,11 @@ gfx_site_list	db "Graphics: zxart.ee",#0d,#0a, "http://zxart.ee/zxnet/?a=g",#0d,
 		db " Top-rated",#0d,#0a, "http://zxart.ee/zxnet/?a=g&o=r",#0d,#0a, view_gfx,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db " First places",#0d,#0a, "http://zxart.ee/zxnet/?a=g&o=w",#0d,#0a, view_gfx,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db " Top of last year published",#0d,#0a, "http://zxart.ee/zxnet/?a=g&o=y",#0d,#0a, view_gfx,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+
+		db " - Multicolour graphic & Timex",#0d,#0a, "http://zxart.ee/zxnet/?a=g&t=multi",#0d,#0a, view_gfx,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db " - Colorful pictures",#0d,#0a, "http://zxart.ee/zxnet/?a=g&t=color",#0d,#0a, view_gfx,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db " - Lowres graphics",#0d,#0a, "http://zxart.ee/zxnet/?a=g&t=lowres",#0d,#0a, view_gfx,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db " - Pixel graphics",#0d,#0a, "http://zxart.ee/zxnet/?a=g&t=pixel",#0d,#0a, view_gfx,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 
 		db #00
 music_site_list	db "Music database: zxart.ee",#0d,#0a, "http://zxart.ee/zxnet/?a=m",#0d,#0a, play_music,music_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
