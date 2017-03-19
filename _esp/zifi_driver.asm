@@ -5,15 +5,26 @@ page_for_download	equ #20
 
 		org #8000
 start 
+
+im2_init	
+		ld a,#be
+		ld i,a
+		ld hl,int_gfx_view
+		ld (#beff),hl
+		im 2
+		ei
 ; memory init
 		ld bc,MEMCONFIG
 		ld a,%00001110
 		out (c),a
 		xor a
 		call set_page0
+		ld a,4
+		out (#fe),a
 
 		call init_zifi
-
+		ld a,1
+		out (#fe),a
 ; create http 
 		ld hl,test_url
 		call parse_url
@@ -21,16 +32,18 @@ start
 ; set page for download data
 		ld a,page_for_download
 		ld (zipd_page+1),a
-
+		ld hl,#0000		; start adress
+		ld (zipd_adr+1),hl
 		call get_url
-
+		ld a,5
+		out (#fe),a
 ; lenght of received data: #00 : #0000
 		ld a,(readed_len_high+1)	; high byte lenght
 		ld hl,(readed_len_low+1)	; low word lenght
-		ret
+		jr $
 
 
-test_url	db "http://ts.retropc.ru/zifi_ver.php?w=0.730",#0d
+test_url	db "http://httpbin.org/ip",#0d
 
 init_zifi	ld      bc,#c7ef
 		ld      de,#fff1
@@ -41,8 +54,12 @@ init_zifi	ld      bc,#c7ef
 		jp      z,nozifi
 		ld      a,#01
 		out     (c),a           ;Clear RX FIFO
-		ld hl,cmd_at
+2		ld hl,cmd_at
 		call zifi_send
+		ld de,str_ok
+        	call buffer_cmp
+        	jr nz,2b
+
 ;ld hl,cmd_uart
 ;		call zifi_send
 		ld hl,cmd_gmr
@@ -506,15 +523,28 @@ create_link_suffix
 
 
 
-wait_frame	halt
-		ret
-
 set_page0	ld bc,PAGE0
 		out (c),a
 		ret
 
 set_page1	ld bc,PAGE1
 		out (c),a
+		ret
+
+
+wait_frame	ld a,(frame+1)
+		or a
+		jr z,wait_frame
+		xor a
+		ld (frame+1),a
+		ret
+
+int_gfx_view	push af,hl,de,bc
+frame		ld a,0
+		inc a
+		ld (frame+1),a
+		pop bc,de,hl,af
+		ei
 		ret
 
 
@@ -551,11 +581,13 @@ cmd_cipmux	db 	"AT+CIPMUX=0",13,10,0		; Выбрать режим одиночн
 cmd_cwautoconn: defb    "AT+CWAUTOCONN=0",13,10,0	; Connect to AP automatically when power on
 cmd_cwqap:      defb    "AT+CWQAP",13,10,0		; Disconnect from AP
 cmd_cwlap:      defb    "AT+CWLAP",13,10,0		; Lists available APs
+
 cmd_cwjap:      defb    "AT+CWJAP_CUR=",0x22		; Connect to AP, won’t save to Flash
-cmd_cwjap_pass	ds 100
-;		defb    "wifitest123"                           ; SSID
-;		defb    0x22,0x2c,0x22
-;		defb    "ZXSpectrumForeverHelloEverybody321"    ; password
+cmd_cwjap_ap	defb    "YV"                           ; SSID
+		defb    #22,#2c,#22
+cmd_cwjap_pass	defb    "1234123412"    ; password
+		defb    #22,#0d,#0a
+
 cmd_cipsta:     defb    "AT+CIPSTA?",13,10,0		; AT+CIPSTA – Set IP address of station
 cmd_cipclose	db    "AT+CIPCLOSE",13,10,0
 ; load data from server
@@ -590,4 +622,4 @@ end
 	
 
 
-		SAVEBIN "zifi_driver.bin",start, end-start	
+		SAVEBIN "_spg/zifi_driver.bin",start, end-start	
