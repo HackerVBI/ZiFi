@@ -71,7 +71,10 @@ start
 		cpl
 		and #f0
 		ld (wheel_old+1),a
-		call autoupdate		; !!!!!!!!!!!!!
+		ld bc,#7FFE
+		in a,(c)
+		bit 0,a		;' '
+		call nz,autoupdate		; !!!!!!!!!!!!!
 main
 sites_sw	ld a,0
 		or a
@@ -1260,12 +1263,16 @@ gfx_border	ld a,0
 		out (c),a
 		
 		call pause
+3		LD BC,#7FFE
+		IN A,(C)
+		BIT 0,A
+		jr z,4f
 		LD BC,#FADF
-3		IN A,(C)     ;читаем порт кнопок
+		IN A,(C)     ;читаем порт кнопок
 		and 3
 		cp 3
 		jr z,3b
-		call pause
+4		call pause
 		ld hl,int_main
 		ld (#beff),hl
 
@@ -3173,11 +3180,11 @@ Standard Kempston Mouse
 #FBDF - X coord
 #FFDF - Y coord
 */
-mouse_pos
+mouse_pos	
 		LD BC,#FADF
 		IN A,(C)     ;читаем порт кнопок
 key_in		ld (mouse_button),a
-
+		call key_scan
 		LD     BC,#FBDF
 		IN     A,(C)
 MOUSE11		LD     d,0
@@ -3187,18 +3194,124 @@ MOUSE11		LD     d,0
 		LD     B,#FF
 		IN     A,(C)
 
-;		call key_scan
-
 MOUSE12		LD     D,0
 		LD     (MOUSE12+1),A
 		SUB    D
 		CALL   NZ,MOUSE_Y_vector
 		RET
 
+key_scan	call CHECK_ARROW_KEY_proc
+
+		ld a,l
+		and right
+		or a
+		jr z,1f
+;		ld a,1
+		push hl
+		call MOUSE_X_vector
+		pop hl
+
+1		ld a,l
+		and left
+		or a
+		jr z,1f
+		push hl
+		ld de,-1
+		call MOUSE_X_vector1
+		pop hl
+
+1		ld a,l
+		and up
+		or a
+		jr z,1f
+		push af
+		push hl
+		ld a,1
+		call MOUSE_Y_vector
+		pop hl
+		pop af
+
+1		ld a,l
+		and down
+		or a
+		jr z,1f
+		ld hl,(mouse_y)
+		inc l
+		ld (mouse_y),hl
+		ret
+
+1		ld a,l
+		and fire
+		or a
+		ret z
+		ld a,#fe
+		ld (mouse_button),a
+		ret
+
+right	equ 1
+left 	equ 2
+up	equ 4
+down 	equ 8
+fire 	equ 16
+stop 	equ 0
+
+
+CHECK_ARROW_KEY_proc
+		ld l,stop
+		ld e,right
+		LD BC,#effe
+		; cs 8
+		IN A,(C)
+		BIT 2,A
+		jr nz,1f
+		ld a,e
+		or l
+		ld l,a
+
+1		ld e,up
+		IN A,(C)
+		BIT 3,A
+		jr nz,1f
+		ld a,e
+		or l
+		ld l,a
+
+1		ld e,down
+		;cs 6
+		IN A,(C)
+		BIT 4,A
+		jr nz,1f
+		ld a,e
+		or l
+		ld l,a
+
+1		ld e,left
+		LD BC,#f7fe
+		IN A,(C)
+		;cs 5
+		BIT 4,A
+		jr nz,1f
+		ld a,e
+		or l
+		ld l,a
+
+1
+;space		
+		ld e,fire
+		LD BC,#7FFE
+		IN A,(C)
+		BIT 0,A
+		ret nz
+		ld a,e
+		or l
+		ld l,a
+		ret
+
+
 MOUSE_X_vector	JP M,MOUSE35	; Sign Negative (M)
 		ld e,a
 		ld d,0
-		ld hl,(mouse_x)
+MOUSE_X_vector1	ld hl,(mouse_x)
 		add hl,de
 		ld (mouse_x),hl
 		ld de,320
@@ -3222,7 +3335,7 @@ MOUSE_Y_vector
 		JP M,MOUSE45
 		ld e,a
 		ld d,0
-		or a
+MOUSE_Y_vector1	or a
 		ld hl,(mouse_y)
 		sub hl,de
 		jr nc,2f
