@@ -1692,7 +1692,7 @@ error_ini_text	db "Error parsing ini file",0
 site_list	dw download_site_list,gfx_site_list,music_site_list,press_site_list
 
 download_site_list	
-		db "Games: vtrdos.ru ",#0d,#0a, "http://ts.retropc.ru/vtrdos.php?t=g",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db "Games: vtrd.in ",#0d,#0a, "http://ts.retropc.ru/vtrdos.php?t=g",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "Games: prods.tslabs.info - ZX Enhanced",#0d,#0a, "http://prods.tslabs.info/prods_zifi.php?t=2",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "Demos: zxn.ru",#0d,#0a, "http://zxn.ru/zxn_zifi.php?t=0",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db " Classic demos",#0d,#0a, "http://zxn.ru/zxn_zifi.php?t=1",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
@@ -1700,11 +1700,11 @@ download_site_list
 		db " Most favorited",#0d,#0a, "http://zxn.ru/zxn_zifi.php?t=3",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db " ZX Enhanced",#0d,#0a, "http://zxn.ru/zxn_zifi.php?t=4",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 
-		db "Demo Packs: vtrdos.ru",#0d,#0a, "http://ts.retropc.ru/vtrdos_demo.php?p=1",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db "Demo Packs: vtrd.in",#0d,#0a, "http://ts.retropc.ru/vtrdos_demo.php?p=1",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "Demos: prods.tslabs.info - ZX Enhanced",#0d,#0a, "http://prods.tslabs.info/prods_zifi.php?t=1",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "Demos: pouet.net - ZX Spectrum",#0d,#0a, "http://ts.retropc.ru/pouet.php?src=pouet_zx",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "Demos: pouet.net - ZX Enhanced",#0d,#0a, "http://ts.retropc.ru/pouet.php?src=pouet_zxe",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
-		db "System: vtrdos.ru",#0d,#0a, "http://ts.retropc.ru/vtrdos.php?t=s",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a		
+		db "System: vtrd.in",#0d,#0a, "http://ts.retropc.ru/vtrdos.php?t=s",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a		
 		db #00
 
 gfx_site_list	db "Graphics: zxart.ee",#0d,#0a, "http://zxart.ee/zxnet/?a=g",#0d,#0a, view_gfx,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
@@ -1728,7 +1728,7 @@ music_site_list	db "Music database: zxart.ee",#0d,#0a, "http://zxart.ee/zxnet/?a
 		
 		db #00
 press_site_list	db "Hype: hype.retroscene.org",#0d,#0a, "http://ts.retropc.ru/get.php?src=hype",#0d,#0a, view_text,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
-		db "Emags: vtrdos.ru", #0d,#0a, "http://ts.retropc.ru/vtrdos.php?t=p",#0d,#0a, save_file,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db "Emags: vtrd.in", #0d,#0a, "http://ts.retropc.ru/vtrdos.php?t=p",#0d,#0a, save_file,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "IRC Logs", #0d,#0a, "http://irclogs.retroscene.org/zifi.php?src=z80",#0d,#0a, view_downloaded_list,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "RSS Channels", #0d,#0a, "http://irclogs.retroscene.org/zrss.php",#0d,#0a, view_text,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db #00
