@@ -1263,16 +1263,12 @@ gfx_border	ld a,0
 		out (c),a
 		
 		call pause
-3		LD BC,#7FFE
-		IN A,(C)
-		BIT 0,A
-		jr z,4f
 		LD BC,#FADF
-		IN A,(C)     ;читаем порт кнопок
+3		IN A,(C)     ;читаем порт кнопок
 		and 3
 		cp 3
 		jr z,3b
-4		call pause
+		call pause
 		ld hl,int_main
 		ld (#beff),hl
 
@@ -1299,6 +1295,8 @@ pause		ld b,#0a
 		djnz $-3
 		ret
 text_view	
+;		main_list_url
+
 		ld a,download_page
 		call set_page1
 text_view_in	xor a
@@ -1692,19 +1690,19 @@ error_ini_text	db "Error parsing ini file",0
 site_list	dw download_site_list,gfx_site_list,music_site_list,press_site_list
 
 download_site_list	
-		db "Games: vtrd.in ",#0d,#0a, "http://ts.retropc.ru/vtrdos.php?t=g",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db "Games: vtrd.in ",#0d,#0a, "http://ex.vtrd.in/vt/export.php?t=g",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "Games: prods.tslabs.info - ZX Enhanced",#0d,#0a, "http://prods.tslabs.info/prods_zifi.php?t=2",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
-		db "Demos: zxn.ru",#0d,#0a, "http://zxn.ru/zxn_zifi.php?t=0",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
-		db " Classic demos",#0d,#0a, "http://zxn.ru/zxn_zifi.php?t=1",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
-		db " Most liked",#0d,#0a, "http://zxn.ru/zxn_zifi.php?t=2",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
-		db " Most favorited",#0d,#0a, "http://zxn.ru/zxn_zifi.php?t=3",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
-		db " ZX Enhanced",#0d,#0a, "http://zxn.ru/zxn_zifi.php?t=4",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db "Demos: bbb.retroscene.org",#0d,#0a, "http://bbb.retroscene.org/zxn_zifi.php?t=0",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db " Classic demos",#0d,#0a, "http://bbb.retroscene.org/zxn_zifi.php?t=1",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db " Most liked",#0d,#0a, "http://bbb.retroscene.org/zxn_zifi.php?t=2",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db " Most favorited",#0d,#0a, "http://bbb.retroscene.org/zxn_zifi.php?t=3",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db " ZX Enhanced",#0d,#0a, "http://bbb.retroscene.org/zxn_zifi.php?t=4",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 
-		db "Demo Packs: vtrd.in",#0d,#0a, "http://ts.retropc.ru/vtrdos_demo.php?p=1",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db "Demo Packs: vtrd.in",#0d,#0a, "http://ex.vtrd.in/vt/export.php?t=d",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "Demos: prods.tslabs.info - ZX Enhanced",#0d,#0a, "http://prods.tslabs.info/prods_zifi.php?t=1",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "Demos: pouet.net - ZX Spectrum",#0d,#0a, "http://ts.retropc.ru/pouet.php?src=pouet_zx",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "Demos: pouet.net - ZX Enhanced",#0d,#0a, "http://ts.retropc.ru/pouet.php?src=pouet_zxe",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
-		db "System: vtrd.in",#0d,#0a, "http://ts.retropc.ru/vtrdos.php?t=s",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a		
+		db "System: vtrd.in",#0d,#0a, "http://ex.vtrd.in/vt/export.php?t=s",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a		
 		db #00
 
 gfx_site_list	db "Graphics: zxart.ee",#0d,#0a, "http://zxart.ee/zxnet/?a=g",#0d,#0a, view_gfx,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
@@ -1728,9 +1726,12 @@ music_site_list	db "Music database: zxart.ee",#0d,#0a, "http://zxart.ee/zxnet/?a
 		
 		db #00
 press_site_list	db "Hype: hype.retroscene.org",#0d,#0a, "http://ts.retropc.ru/get.php?src=hype",#0d,#0a, view_text,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
-		db "Emags: vtrd.in", #0d,#0a, "http://ts.retropc.ru/vtrdos.php?t=p",#0d,#0a, save_file,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
-		db "IRC Logs", #0d,#0a, "http://irclogs.retroscene.org/zifi.php?src=z80",#0d,#0a, view_downloaded_list,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
-		db "RSS Channels", #0d,#0a, "http://irclogs.retroscene.org/zrss.php",#0d,#0a, view_text,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db "Emags: vtrd.in", #0d,#0a, "http://ex.vtrd.in/vt/export.php?t=p",#0d,#0a, save_file,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db "Z80 Telegram Log", #0d,#0a, "http://ts.retropc.ru/tlg.php",#0d,#0a, view_text,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db "IRC Logs", #0d,#0a, "http://irclog.dimkam.ru/zifi.php?src=z80",#0d,#0a, view_downloaded_list,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db "RSS Channels", #0d,#0a, "http://irclog.dimkam.ru/zrss.php",#0d,#0a, view_text,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+
+
 		db #00
 
 
@@ -2266,7 +2267,7 @@ link_highlight	ld a,0
 		or a
 		call nz,link_highlight_view
 
-int_ex2		ld hl,56+4*8-2
+int_ex2		ld hl,56+4*8-4
 		ld de,int_text_cor
 int_ex		ld bc,VSINTL
 		out (c),l
@@ -2729,9 +2730,11 @@ sum_list_lines	ld a,0
 		ld c,a
 		or a
 		jr nz,1f
+
 		ld a,(do_after_load+1)
 		cp view_downloaded_list
 		jr z,1f
+
 		ld a,1				; start enter search word
 		ld (enter_search_sw+1),a
 		call set_Textpage_lite
@@ -2769,10 +2772,15 @@ sum_list_lines	ld a,0
 		call set_page1
 		ld h,(ix+4)
 		ld l,(ix+3)
-		push hl
 		ld (main_list_url+1),hl
-		ld a,(do_after_link_list+1)	; проверка на файло для закачки
-		cp save_file
+		ld a,(do_after_link_list+1)	; проверка на текст и установка нового пейджинга
+		cp view_text
+		jr nz,1f
+		call parse_url			
+		jr main_list_url		; paging for text files
+
+1		push hl
+		cp save_file			; проверка на файло для закачки
 		jr nz,not_unzip
 						; проверка на zip
 		ld de,zip_url_buffer_data
@@ -2786,7 +2794,7 @@ not_unzip	call parse_url
 		pop hl
 		call scan_0d
 		ld a,(hl)			; проверка на клик по списку сайтов в разделе
-		cp #0d		
+		cp #0d
 		jr nc,1f
 		ld (do_after_link_list+1),a	; тип действия для данного сайта
 		inc hl
@@ -3180,11 +3188,11 @@ Standard Kempston Mouse
 #FBDF - X coord
 #FFDF - Y coord
 */
-mouse_pos	
+mouse_pos
 		LD BC,#FADF
 		IN A,(C)     ;читаем порт кнопок
 key_in		ld (mouse_button),a
-		call key_scan
+
 		LD     BC,#FBDF
 		IN     A,(C)
 MOUSE11		LD     d,0
@@ -3194,124 +3202,18 @@ MOUSE11		LD     d,0
 		LD     B,#FF
 		IN     A,(C)
 
+;		call key_scan
+
 MOUSE12		LD     D,0
 		LD     (MOUSE12+1),A
 		SUB    D
 		CALL   NZ,MOUSE_Y_vector
 		RET
 
-key_scan	call CHECK_ARROW_KEY_proc
-
-		ld a,l
-		and right
-		or a
-		jr z,1f
-;		ld a,1
-		push hl
-		call MOUSE_X_vector
-		pop hl
-
-1		ld a,l
-		and left
-		or a
-		jr z,1f
-		push hl
-		ld de,-1
-		call MOUSE_X_vector1
-		pop hl
-
-1		ld a,l
-		and up
-		or a
-		jr z,1f
-		push af
-		push hl
-		ld a,1
-		call MOUSE_Y_vector
-		pop hl
-		pop af
-
-1		ld a,l
-		and down
-		or a
-		jr z,1f
-		ld hl,(mouse_y)
-		inc l
-		ld (mouse_y),hl
-		ret
-
-1		ld a,l
-		and fire
-		or a
-		ret z
-		ld a,#fe
-		ld (mouse_button),a
-		ret
-
-right	equ 1
-left 	equ 2
-up	equ 4
-down 	equ 8
-fire 	equ 16
-stop 	equ 0
-
-
-CHECK_ARROW_KEY_proc
-		ld l,stop
-		ld e,right
-		LD BC,#effe
-		; cs 8
-		IN A,(C)
-		BIT 2,A
-		jr nz,1f
-		ld a,e
-		or l
-		ld l,a
-
-1		ld e,up
-		IN A,(C)
-		BIT 3,A
-		jr nz,1f
-		ld a,e
-		or l
-		ld l,a
-
-1		ld e,down
-		;cs 6
-		IN A,(C)
-		BIT 4,A
-		jr nz,1f
-		ld a,e
-		or l
-		ld l,a
-
-1		ld e,left
-		LD BC,#f7fe
-		IN A,(C)
-		;cs 5
-		BIT 4,A
-		jr nz,1f
-		ld a,e
-		or l
-		ld l,a
-
-1
-;space		
-		ld e,fire
-		LD BC,#7FFE
-		IN A,(C)
-		BIT 0,A
-		ret nz
-		ld a,e
-		or l
-		ld l,a
-		ret
-
-
 MOUSE_X_vector	JP M,MOUSE35	; Sign Negative (M)
 		ld e,a
 		ld d,0
-MOUSE_X_vector1	ld hl,(mouse_x)
+		ld hl,(mouse_x)
 		add hl,de
 		ld (mouse_x),hl
 		ld de,320
@@ -3335,7 +3237,7 @@ MOUSE_Y_vector
 		JP M,MOUSE45
 		ld e,a
 		ld d,0
-MOUSE_Y_vector1	or a
+		or a
 		ld hl,(mouse_y)
 		sub hl,de
 		jr nc,2f
