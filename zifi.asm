@@ -122,7 +122,7 @@ do_init_music	ld a,0
 		jp main
 
 selfupdate_msg1		db "ZiFi ver. "
-cur_version		db '0.730',0,0
+cur_version		db '0.731',0,0
 
 autoupdate	ld hl,cur_version
 		ld de,upd_ver
@@ -1722,6 +1722,7 @@ music_site_list	db "Music database: zxart.ee",#0d,#0a, "http://zxart.ee/zxnet/?a
 		db " Top-rated",#0d,#0a, "http://zxart.ee/zxnet/?a=m&o=r",#0d,#0a, play_music,music_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db " First places",#0d,#0a, "http://zxart.ee/zxnet/?a=m&o=w",#0d,#0a, play_music,music_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db " Top of last year published",#0d,#0a, "http://zxart.ee/zxnet/?a=m&o=y",#0d,#0a, play_music,music_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db " --+ TurboSound Music +--",#0d,#0a, "http://zxart.ee/zxnet/?a=m&f=ts",#0d,#0a, play_music,music_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		
 		
 		db #00
