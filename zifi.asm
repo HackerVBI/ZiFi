@@ -122,7 +122,7 @@ do_init_music	ld a,0
 		jp main
 
 selfupdate_msg1		db "ZiFi ver. "
-cur_version		db '0.731',0,0
+cur_version		db '0.732',0,0
 
 autoupdate	ld hl,cur_version
 		ld de,upd_ver
@@ -223,7 +223,7 @@ checksum_error_mes	db "Checksum error, please restart",0,0
 not_update_message	db "Your ZiFi is up to date.",0,0
 update_message		db "-+- Your ZiFi is updated! -+- Please restart -+-",0,0
 
-selfupdate	db "http://ts.retropc.ru/zifi_ver.php?"
+selfupdate	db "http://zifi.vtrd.in/zifi_ver.php?"
 	IF cable_zifi 
 		db "c"
 	ELSE
@@ -1700,8 +1700,8 @@ download_site_list
 
 		db "Demo Packs: vtrd.in",#0d,#0a, "http://ex.vtrd.in/vt/export.php?t=d",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "Demos: prods.tslabs.info - ZX Enhanced",#0d,#0a, "http://prods.tslabs.info/prods_zifi.php?t=1",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
-		db "Demos: pouet.net - ZX Spectrum",#0d,#0a, "http://ts.retropc.ru/pouet.php?src=pouet_zx",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
-		db "Demos: pouet.net - ZX Enhanced",#0d,#0a, "http://ts.retropc.ru/pouet.php?src=pouet_zxe",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db "Demos: pouet.net - ZX Spectrum",#0d,#0a, "http://zifi.vtrd.in/pouet.php?src=pouet_zx",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db "Demos: pouet.net - ZX Enhanced",#0d,#0a, "http://zifi.vtrd.in/pouet.php?src=pouet_zxe",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "System: vtrd.in",#0d,#0a, "http://ex.vtrd.in/vt/export.php?t=s",#0d,#0a, save_file,download_page,#0d,#0a, " ",#0d,#0a, " ",#0d,#0a		
 		db #00
 
@@ -1726,9 +1726,9 @@ music_site_list	db "Music database: zxart.ee",#0d,#0a, "http://zxart.ee/zxnet/?a
 		
 		
 		db #00
-press_site_list	db "Hype: hype.retroscene.org",#0d,#0a, "http://ts.retropc.ru/get.php?src=hype",#0d,#0a, view_text,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+press_site_list	db "Hype: hype.retroscene.org",#0d,#0a, "http://zifi.vtrd.in/get.php?src=hype",#0d,#0a, view_text,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "Emags: vtrd.in", #0d,#0a, "http://ex.vtrd.in/vt/export.php?t=p",#0d,#0a, save_file,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
-		db "Z80 Telegram Log", #0d,#0a, "http://ts.retropc.ru/tlg.php",#0d,#0a, view_text,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
+		db "Z80 Telegram Log", #0d,#0a, "http://zifi.vtrd.in/tlg.php",#0d,#0a, view_text,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "IRC Logs", #0d,#0a, "http://irclog.dimkam.ru/zifi.php?src=z80",#0d,#0a, view_downloaded_list,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 		db "RSS Channels", #0d,#0a, "http://irclog.dimkam.ru/zrss.php",#0d,#0a, view_text,download_page, #0d,#0a, " ",#0d,#0a, " ",#0d,#0a
 
@@ -2196,6 +2196,8 @@ by_db		db " by ",#0a
 drawString	; de: screen adress in tiles
 		; hl: string
 		ld (char_color+1),a
+		ld a, 80
+		ld (charz+1), a
 		push de
 		exx
 		pop hl
@@ -2213,6 +2215,10 @@ char_color	ld (hl),0
 		inc l
 		exx
 		inc hl
+charz		ld a, 0
+		dec a
+		ret z
+		ld (charz+1), a
 		jr dStr1
 
 dStr3		inc hl
@@ -3788,7 +3794,7 @@ http_part2	db    "User-Agent: ZiFi (ZX Evo)",13,10    ; show off ;)
 		db    "Connection: close",13,10,13,10
 http_part3
 
-zip_url_buffer	db "http://ts.retropc.ru/unzipremote.php?f="
+zip_url_buffer	db "http://zifi.vtrd.in/unzipremote.php?f="
 zip_url_buffer_data	ds 256
 
 list_search_db

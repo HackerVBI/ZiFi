@@ -74,7 +74,7 @@ main
 		di
 		halt
 
-test_url	db "http://ts.retropc.ru/vtrdos_demo.php?s=1",#0d,#0a,0
+test_url	db "http://zifi.vtrd.in/vtrdos_demo.php?s=1",#0d,#0a,0
 
 
 /*
@@ -631,7 +631,7 @@ http_part2	db    "User-Agent: ZiFi (ZX Evo)",13,10    ; show off ;)
 		db    "Connection: close",13,10,13,10
 http_part3
 
-zip_url_buffer	db "http://ts.retropc.ru/unzipremote.php?f="
+zip_url_buffer	db "http://zifi.vtrd.in/unzipremote.php?f="
 zip_url_buffer_data	ds 256
 
 
